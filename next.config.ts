@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       "115.127.156.132",
       "192.168.10.149",
       "192.168.10.251",
+      "api.consolelocker.it"
     ],
   },
 };
