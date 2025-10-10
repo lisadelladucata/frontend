@@ -1,56 +1,174 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Modal } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store/store";
 import { toggleModal } from "@/redux/features/modal/modalSlice";
 import {
-  useGetASingleProductQuery,
-  useSellProductQuery,
-} from "@/redux/features/sell/SellProductAPI";
+  useFindSlugProductQuery,
+  useGetSingleProductQuery,
+  useGetAllProductsQuery,
+} from "@/redux/features/products/ProductAPI";
 import Image from "next/image";
-import { showTradeInDescription } from "@/redux/features/tradeIn/showTradeInSlice";
-import { Check } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { toggleTradeIn } from "@/redux/features/tradeIn/showTradeInSlice";
 import Loading from "@/app/loading";
 import { useGetEstimateProductPriceMutation } from "@/redux/features/products/ProductAPI";
 import { addModalTradeInData } from "@/redux/features/modalTradeInData/ModalTradeInData";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Definizioni di base per le domande
+interface Question {
+  id: string;
+  text: string;
+  description?: string;
+  step: number; // Campo cruciale per il raggruppamento (1, 2, 3, 4, 5)
+  options: {
+    value: string;
+    label: string;
+    description?: string;
+  }[];
+}
+
+const MOCK_QUESTIONS: Question[] = [
+  // --- STEP 1: CONDIZIONE ESTETICA E TECNICA ---
+  {
+    id: "q1_condizione_estetica",
+    text: "In che condizioni è la tua console?",
+    step: 1,
+    options: [
+      { value: "brand_new", label: "Brand New" },
+      { value: "good", label: "Good" },
+      { value: "not_bad", label: "Not Bad" },
+    ],
+  },
+  {
+    id: "q2_difetti_tecnici",
+    text: "La console è priva di difetti tecnici?",
+    step: 1,
+    options: [
+      { value: "si_perfetta", label: "Sì" },
+      { value: "no_difetti", label: "No" },
+    ],
+  },
+
+  // --- STEP 2: ACCESSORI BASE ---
+  {
+    id: "q3_accessori_originali",
+    text: "Sono compresi gli accessori originali?",
+    step: 2,
+    options: [
+      { value: "si_completi", label: "Sì" },
+      { value: "no_mancano", label: "No" },
+    ],
+  },
+
+  // --- STEP 3: CONTROLLER ---
+  {
+    id: "q4_numero_controller",
+    text: "Quanti controller ci invierai?",
+    step: 3,
+    options: [
+      { value: "zero", label: "0" },
+      { value: "uno", label: "1" },
+      { value: "due", label: "2" },
+    ],
+  },
+
+  // --- STEP 4: MEMORIA ---
+  {
+    id: "q5_memoria",
+    text: "Memoria di archiviazione del dispositivo?",
+    step: 4,
+    options: [
+      { value: "1tb", label: "1 Terabyte" },
+      { value: "500gb", label: "500 Gigabyte" },
+    ],
+  },
+
+  // --- STEP 5: DOMANDA FINALE GENERICA (Per arrivare a 5 step) ---
+  {
+    id: "q6_scatola_originale",
+    text: "Possiedi la scatola e l'imballo originale?",
+    step: 5,
+    options: [
+      { value: "si_scatola", label: "Sì" },
+      { value: "no_scatola", label: "No" },
+    ],
+  },
+];
+
 const ConsoleModal: React.FC = () => {
+  // ----------------------- STATI -----------------------
   const [isModalOpen, setIsModalOpen] = useState(true);
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [selectedOptions, setSelectedOptions] = useState<
-    Record<string, string>
-  >({});
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedConsoleImage, setSelectedConsoleImage] = useState<
+    string | null
+  >(null);
 
-  // set current option
-  const [selectedOption, setSelectedOption] = useState<string>();
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
+  const [selectedPlatform, setSelectedPlatform] =
+    useState<string>("Playstation");
   const [selectedConsole, setSelectedConsole] = useState("");
   const [estimatePrice, setEstimatePrice] = useState<number>(0);
+  const [productId, setProductId] = useState<string | null>(null);
 
   const modalState = useSelector((state: RootState) => state.modal.modal);
-
   const dispatch = useDispatch();
-  const [productId, setProductId] = useState<string | null>(null);
-  const [questionsOptionsId, setQuestionsOptionsId] = useState<
-    { quesId: string; optionId: string }[]
-  >([]);
 
-  const [
-    getEstimateProductPrice,
-    { data, isLoading: getPriceLoading, isError: getPriceError },
-  ] = useGetEstimateProductPriceMutation();
+  const FINAL_STEP_INDEX = 6; // Step finale di riepilogo
+  const TOTAL_QUESTION_STEPS = 5; // Totale blocchi di domande (Step 1 a 5)
 
-  // Fetch product details
-  const { data: productData, isLoading } = useGetASingleProductQuery(
-    productId as string
+  // ----------------------- HELPER PER IL RIEPILOGO -----------------------
+  // Funzione per ottenere l'etichetta leggibile dalla risposta salvata
+  const getAnswerLabel = useCallback(
+    (questionId: string, answerValue: string): string => {
+      const question = MOCK_QUESTIONS.find((q) => q.id === questionId);
+      const option = question?.options.find((opt) => opt.value === answerValue);
+
+      // Formattazione per il riepilogo (può essere personalizzata)
+      if (questionId === "q1_condizione_estetica")
+        return option?.label || answerValue;
+      if (questionId === "q2_difetti_tecnici")
+        return `Difetti tecnici: ${option?.label || answerValue}`;
+      if (questionId === "q3_accessori_originali")
+        return `Accessori originali: ${option?.label || answerValue}`;
+      if (questionId === "q4_numero_controller")
+        return `${option?.label || answerValue} Controller`;
+      if (questionId === "q5_memoria") return `${option?.label || answerValue}`;
+      if (questionId === "q6_scatola_originale")
+        return `Scatola originale: ${option?.label || answerValue}`;
+
+      return option?.label || answerValue;
+    },
+    []
   );
 
-  // Choose your console
-  const { data: consoleLists } = useSellProductQuery({
-    limit: 10,
-  });
+  // ----------------------- HOOKS E LOGICA API -----------------------
+  // ... (Logica Hooks e API Omessa per brevità)
+  const params = useParams();
+  const [slug, setSlug] = useState(params.slug);
 
-  React.useEffect(() => {
+  const [getEstimateProductPrice] = useGetEstimateProductPriceMutation();
+
+  const { data: productData, isLoading } = useGetSingleProductQuery(
+    { slug: productId as string },
+    { skip: !productId }
+  );
+  const { data: consoleLists } = useGetAllProductsQuery({ limit: 10 });
+  const { data: singleProduct } = useGetSingleProductQuery({
+    slug: slug as string | undefined,
+  });
+  const { data: slugRes } = useFindSlugProductQuery(
+    { productName: singleProduct?.data?.product?.name },
+    { skip: !singleProduct?.data?.product?.name }
+  );
+
+  // Effetti laterali
+  useEffect(() => {
     setIsModalOpen(modalState);
   }, [modalState]);
 
@@ -59,282 +177,463 @@ const ConsoleModal: React.FC = () => {
     dispatch(toggleModal());
   };
 
-  const handleChooseConsole = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { id, name } = JSON.parse(e.target.value);
-
-    setSelectedConsole(name);
-    setProductId(id);
-    setCurrentStep(1);
-  };
-
-  const handleOptionSelect = (
-    quesId: string,
-    optionId: string,
-    option: string
-  ) => {
-    const newQuestionOption = { quesId, optionId };
-    setQuestionsOptionsId((prev) => [...prev, newQuestionOption]);
-
-    // setSelectedOptions((prev) => ({ ...prev, [questionName]: option }));
-    setSelectedOption(option);
-
-    setTimeout(() => {
-      setCurrentStep((prev) => prev + 1);
-    }, 250);
-  };
-
-  const getProductPrice = async () => {
-    try {
-      const response = await getEstimateProductPrice({
-        id: productId as string,
-        body: { questions: questionsOptionsId },
-      });
-      setEstimatePrice(response?.data?.data?.price || 0);
-    } catch (error) {
-      console.error("Error fetching estimated price:", error);
-    }
-  };
+  const calculateTradeInValue = useCallback(
+    (currentAnswers: Record<string, string>) => {
+      setEstimatePrice(Math.floor(Math.random() * (400 - 100 + 1) + 100)); // Esempio
+    },
+    []
+  );
 
   const addTradeIn = async () => {
     const data = {
       productName: selectedConsole as string,
       productPrice: estimatePrice as number,
     };
-
     dispatch(addModalTradeInData(data));
-
-    const tradeInData = { product: productId, questions: questionsOptionsId };
-
-    localStorage.setItem("tradeInData", JSON.stringify(tradeInData));
-
-    // console.log(ableTradeIn);
     dispatch(toggleModal());
-    dispatch(showTradeInDescription());
+    dispatch(toggleTradeIn());
   };
 
-  const questions = productData?.data?.questions || [];
+  // ----------------------- FUNZIONE DI RENDERING -----------------------
 
-  useEffect(() => {
-    if (currentStep === questions.length) {
-      getProductPrice();
-    }
-  }, [currentStep, questionsOptionsId]);
-
-  // TODO: Test COde
-  console.log(productId, questionsOptionsId);
-
-  const renderContent = () => {
+  const renderContent = (): React.JSX.Element | null => {
     if (isLoading) return <Loading />;
 
+    // Mappe Colori (Centralizzate)
+    const cardBgColors: Record<string, string> = {
+      playstation: "bg-blue-600",
+      xbox: "bg-green-600",
+      nintendo: "bg-red-600",
+    };
+
+    const cardBorderColors: Record<string, string> = {
+      playstation: "border-blue-600",
+      xbox: "border-green-600",
+      nintendo: "border-red-600",
+    };
+
+    const buttonBgColors: Record<string, string> = {
+      playstation: "bg-blue-600 hover:bg-blue-700",
+      xbox: "bg-green-600 hover:bg-green-700",
+      nintendo: "bg-red-600 hover:bg-red-700",
+    };
+
+    const targetProductType = selectedPlatform.toLowerCase();
+    const buttonColorClass =
+      buttonBgColors[targetProductType] || "bg-orange-500 hover:bg-orange-600";
+    const selectionColorClass =
+      cardBgColors[targetProductType] || "bg-blue-600";
+    const consoleBorderClass =
+      cardBorderColors[targetProductType] || "border-blue-600";
+
+    // ----------------------------------------------------------------------
+    // --- STEP 0: Scelta Console ---
+    // ----------------------------------------------------------------------
     if (currentStep === 0) {
+      // ... (Codice Step 0 Omesso per brevità)
+      const isConsoleSelected = !!productId;
+
+      const filteredConsoles =
+        consoleLists?.data?.products?.filter(
+          (consoleItem: any) => consoleItem?.product_type === targetProductType
+        ) || [];
+
       return (
-        <div className="w-full h-[500px]">
-          <h2 className="text-[40px] font-semibold text-[#101010] mt-8">
-            Great! Let’s started.
-          </h2>
-          <p className="text-[#6B6B6B] text-base leading-6 mt-4">
-            The phone will have heavy signs of wear, such as deeper scratches,
-            dents and other marks. The phone is unlocked, fully tested and works
-            like new.
-          </p>
-          <p className="text-[#101010] text-base leading-6 mt-4">
-            Please select your console to add product to cart
-          </p>
+        <div className="w-full flex flex-col h-full max-h-[50vh] ">
+          <div className="p-2 bg-white sticky top-0 z-10 border-b border-gray-100 rounded-lg ">
+            <h2 className="text-lg font-semibold text-gray-800 text-left text-center">
+              Quale console vuoi far valutare?
+            </h2>
+          </div>
 
-          <div className="relative w-full">
-            <select
-              onChange={handleChooseConsole}
-              name="console"
-              id="console"
-              value={selectedConsole || ""}
-              className="
-                w-full px-3 py-2 border rounded-3xl bg-white text-sm sm:text-base appearance-none"
-            >
-              <option value="" disabled>
-                Choose your console
-              </option>
-              {consoleLists?.data?.products?.map((console: any) => (
-                <option
-                  key={console?._id}
-                  value={JSON.stringify({
-                    id: console?._id,
-                    name: console?.name,
-                  })}
-                >
-                  {console?.name}
-                </option>
+          <div className="px-4 pt-4 flex flex-col flex-grow">
+            {/* 1. FILTRI */}
+            <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+              {["Playstation", "Xbox", "Nintendo"].map((platform) => (
+                <button
+                  key={platform}
+                  onClick={() => {
+                    setSelectedPlatform(platform);
+                    setProductId(null);
+                    setSelectedConsole("");
+                  }}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-colors duration-150 ${
+                    selectedPlatform === platform
+                      ? `${buttonColorClass} text-white`
+                      : "text-gray-700"
+                  }`}>
+                  {platform}
+                </button>
               ))}
-            </select>
+            </div>
 
-            <div className="absolute inset-y-0 right-0 flex items-center px-3">
-              <svg
-                className="w-4 h-4 text-gray-500"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
+            {/* 2. LISTA DELLE CONSOLE */}
+            <div className="flex flex-col gap-2 overflow-y-auto flex-grow pb-4 -mx-4 px-4 max-h-[250px]">
+              {filteredConsoles.length > 0 ? (
+                filteredConsoles.map((consoleItem: any) => {
+                  const isSelected = productId === consoleItem._id;
+                  const cardColor =
+                    cardBgColors[consoleItem.product_type] || "bg-gray-700";
+                  const consoleImageUrl = `${API_URL}${consoleItem?.images[0]}`;
+
+                  return (
+                    <div
+                      key={consoleItem?._id}
+                      onClick={() => {
+                        if (productId === consoleItem?._id) {
+                          setProductId(null);
+                          setSelectedConsole("");
+                        } else {
+                          setSelectedConsole(consoleItem?.name);
+                          setProductId(consoleItem?._id);
+                        }
+                      }}
+                      className={`
+                                                flex items-center gap-4  min-h-[100px] cursor-pointer rounded-lg  transition-colors duration-200
+                                                ${
+                                                  isSelected
+                                                    ? `${cardColor} text-white`
+                                                    : "bg-white border-b border-gray-100 hover:bg-gray-50"
+                                                }
+                                            `}>
+                      <div
+                        className="relative flex items-center justify-center flex-shrink-0  rounded-lg bg-cover bg-center"
+                        style={{
+                          backgroundImage: `url('/sell/${consoleItem?.product_type}-sq.jpeg')`,
+                        }}>
+                        <Image
+                          src={consoleImageUrl}
+                          width={100}
+                          height={70}
+                          alt={consoleItem?.name}
+                          className="object-contain flex-shrink-0"
+                        />
+                      </div>
+                      <span
+                        className={`text-xl font-bold leading-snug ${
+                          isSelected ? "text-white" : "text-gray-800"
+                        }`}>
+                        {consoleItem?.name}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-center text-gray-500 pt-8">
+                  Nessuna console {selectedPlatform} trovata.
+                </p>
+              )}
             </div>
           </div>
-        </div>
-      );
-    }
 
-    if (currentStep <= questions.length) {
-      const question = questions[currentStep - 1];
-      // console.log("question", question);
-      return (
-        <div className="min-h-[500px]">
-          <div className="mb-5">
-            <h2 className="text-[40px] font-semibold text-[#101010] mt-8">
-              Great! Let’s started.
-            </h2>
-            <p className="text-[#6B6B6B] text-base leading-6 mt-4">
-              The phone will have heavy signs of wear, such as deeper scratches,
-              dents and other marks. The phone is unlocked, fully tested and
-              works like new.
-            </p>
-          </div>
-
-          <h2 className="font-semibold text-[24px] mb-5">
-            {question.description}
-          </h2>
-
-          <div className="flex flex-wrap gap-2">
-            {question?.options?.map((option: any) => (
-              <button
-                key={option._id}
-                onClick={() =>
-                  handleOptionSelect(question._id, option._id, option.option)
+          {/* Footer Fisso con pulsante Continua */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 rounded-lg shadow-xl">
+            <button
+              onClick={() => {
+                if (isConsoleSelected) {
+                  setCurrentStep(1); // Vai al primo blocco di domande
+                  setCurrentQuestionIndex(0); // Inizia dalla prima domanda
                 }
-                className={`min-w-[177px] min-h-[111px] ${
-                  selectedOption === option.option ? "bg-[#E7E7E7]" : ""
-                } flex flex-col items-center justify-center gap-2 border rounded text-lg text-[#101010] font-medium p-5`}
-              >
-                {option.option} (+${option.price})
-                <Check />
-              </button>
-            ))}
+              }}
+              disabled={!isConsoleSelected}
+              className={`
+                                w-full py-3 rounded-xl text-lg font-bold text-white transition-opacity duration-200
+                                ${
+                                  isConsoleSelected
+                                    ? "bg-orange-500 hover:bg-orange-600"
+                                    : "bg-gray-400 cursor-not-allowed opacity-70"
+                                }
+                            `}>
+              CONTINUA
+            </button>
           </div>
         </div>
       );
     }
 
-    return (
-      <div>
-        <div className="w-full min-h-[500px]">
-          <h2 className="flex items-center gap-5 text-lg font-semibold text-[#101010] mt-8">
-            <Image
-              src={"/modal/arrow-left.png"}
-              width={20}
-              height={20}
-              alt="arrow"
-            />{" "}
-            Great! Let’s started.
+    // ----------------------------------------------------------------------
+    // --- STEP 1, 2, 3, 4, 5: Blocchi di Domande (Logica unificata) ---
+    // ----------------------------------------------------------------------
+    if (currentStep >= 1 && currentStep <= TOTAL_QUESTION_STEPS) {
+      const allQuestions: Question[] =
+        productData?.data?.questions || MOCK_QUESTIONS;
+      const allQuestionsForStep = allQuestions.filter(
+        (q) => q.step === currentStep
+      );
+      const currentQuestion = allQuestionsForStep[currentQuestionIndex];
+      const isLastQuestionInStep =
+        currentQuestionIndex === allQuestionsForStep.length - 1;
+
+      if (!currentQuestion) {
+        return null;
+      }
+
+      const handleAnswer = (answerValue: string) => {
+        const questionId = currentQuestion.id || currentQuestion.text;
+        setAnswers({
+          ...answers,
+          [questionId]: answerValue,
+        });
+      };
+
+      const handleContinue = () => {
+        if (isLastQuestionInStep) {
+          if (currentStep < TOTAL_QUESTION_STEPS) {
+            setCurrentStep(currentStep + 1);
+            setCurrentQuestionIndex(0);
+          } else {
+            calculateTradeInValue(answers);
+            setCurrentStep(FINAL_STEP_INDEX);
+          }
+        } else {
+          setCurrentQuestionIndex((prev) => prev + 1);
+        }
+      };
+
+      const handleBack = () => {
+        if (currentQuestionIndex > 0) {
+          setCurrentQuestionIndex((prev) => prev - 1);
+        } else if (currentStep > 1) {
+          setCurrentStep(currentStep - 1);
+          setCurrentQuestionIndex(0);
+        } else {
+          setCurrentStep(0);
+        }
+      };
+
+      const selectedAnswerValue =
+        answers[currentQuestion.id || currentQuestion.text];
+
+      return (
+        <div className="w-full flex flex-col h-full max-h-[70vh]">
+          {/* Header: Titolo Domanda e Pulsante Indietro */}
+          <div className="p-4 bg-white sticky top-0 z-10 border-b border-gray-100 rounded-lg flex-shrink-0">
+            <h2 className="text-lg font-semibold text-gray-800 text-center w-full pr-10 text-center">
+              {currentQuestion.text}
+            </h2>
+          </div>
+
+          {/* Corpo: Opzioni di Risposta (Scorrevole) */}
+          <div className="px-4 pt-4 flex flex-col flex-grow overflow-y-auto">
+            <div className="flex flex-col gap-4">
+              {currentQuestion.options.map((option: any) => {
+                const isSelected = selectedAnswerValue === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => handleAnswer(option.value)}
+                    className={`
+                                            py-5 px-4 border rounded-xl text-center text-3xl font-bold transition-all duration-150 shadow-md
+                                            ${
+                                              isSelected
+                                                ? `${selectionColorClass} text-white border-0`
+                                                : "bg-white border-gray-300 text-gray-800 hover:border-gray-500"
+                                            }
+                                        `}>
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer Fisso con Pulsante CONTINUA */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 mt-4 rounded-lg shadow-xl ">
+            <button
+              onClick={handleContinue}
+              disabled={!selectedAnswerValue}
+              className={`
+                                w-full py-3 rounded-xl text-lg font-bold text-white transition-opacity duration-200
+                                ${
+                                  selectedAnswerValue
+                                    ? "bg-orange-500 hover:bg-orange-600"
+                                    : "bg-gray-400 cursor-not-allowed opacity-70"
+                                }
+                            `}>
+              {isLastQuestionInStep && currentStep === TOTAL_QUESTION_STEPS
+                ? "VEDI VALORE"
+                : "CONTINUA"}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ----------------------------------------------------------------------
+    // --- 🟢 STEP 6: Riepilogo Finale (Aggiornato) ---
+    // ----------------------------------------------------------------------
+    if (currentStep === FINAL_STEP_INDEX) {
+      // Stato per il toggle dei dettagli
+
+      // Estrai e formatta le risposte per la visualizzazione
+      const conditionAnswer = getAnswerLabel(
+        "q1_condizione_estetica",
+        answers["q1_condizione_estetica"] || ""
+      );
+      const controllerAnswer = getAnswerLabel(
+        "q4_numero_controller",
+        answers["q4_numero_controller"] || ""
+      );
+      const memoryAnswer = getAnswerLabel(
+        "q5_memoria",
+        answers["q5_memoria"] || ""
+      );
+      const technicalDefects = getAnswerLabel(
+        "q2_difetti_tecnici",
+        answers["q2_difetti_tecnici"] || ""
+      );
+      const accessories = getAnswerLabel(
+        "q3_accessori_originali",
+        answers["q3_accessori_originali"] || ""
+      );
+      const boxAnswer = getAnswerLabel(
+        "q6_scatola_originale",
+        answers["q6_scatola_originale"] || ""
+      );
+
+      // Dettagli concatenati per la riga principale (Simile a: Slim | 1TB | 2 Controller)
+      const mainDetails = [memoryAnswer, controllerAnswer]
+        .filter(Boolean)
+        .join(" | ");
+
+      const imageSrc = selectedConsoleImage || "";
+
+      return (
+        <div className="w-full min-h-[500px] p-4 flex flex-col">
+          <h2 className="flex items-center gap-5 text-lg font-semibold text-[#101010] mt-4">
+            Il tuo prezzo Trade-in
           </h2>
-          <p className="text-[#6B6B6B] text-base leading-6 mt-4">
-            Your estimated trade-in your iPhone 8 Plus, 500GBis:
+
+          {/* Contenitore principale del riepilogo della console (SENZA cornicetta colorata) */}
+          <div className="p-4 bg-white rounded-lg mt-4 flex flex-col shadow-md">
+            <div className="flex gap-4 items-center">
+              {/* Immagine Placehoder */}
+              <div
+                className={`relative w-[100px] h-[70px] bg-gray-200 rounded-lg flex-shrink-0`}>
+                {selectedConsoleImage && selectedConsoleImage !== "" ? (
+                  <Image
+                    src={selectedConsoleImage}
+                    width={100}
+                    height={70}
+                    alt={selectedConsole || "Console"}
+                    className="object-contain"
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center text-xs text-white ${
+                      cardBgColors[targetProductType] || "bg-gray-500"
+                    }`}>
+                    {selectedPlatform.toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              {/* Dettagli Console */}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center pr-2">
+                  <h3 className="text-xl font-bold text-gray-800 truncate">
+                    {selectedConsole || "Console Selezionata"}
+                  </h3>
+
+                  {/* Riga Condizione Estetica + TOGGLE */}
+                  <button
+                    onClick={() => setShowDetails(!showDetails)}
+                    className="text-gray-500 hover:text-gray-700 p-1 transition-transform duration-300 transform"
+                    title={
+                      showDetails ? "Nascondi dettagli" : "Mostra dettagli"
+                    }>
+                    <svg
+                      className={`w-5 h-5 ${
+                        showDetails ? "rotate-0" : "rotate-180"
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 15l7-7 7 7"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Blocco Dettagli Risposte (Espandibile/Comprimibile) */}
+            {showDetails && (
+              <div className="border-t border-gray-200 mt-3 pt-3 text-sm space-y-1">
+                <p className="text-sm text-gray-800 font-medium">
+                  {conditionAnswer}
+                </p>
+                <p className="text-sm text-gray-600 mb-2 truncate">
+                  {mainDetails}
+                </p>
+
+                <p className="text-gray-600">{technicalDefects}</p>
+                <p className="text-gray-600">{accessories}</p>
+                <p className="text-gray-600">{boxAnswer}</p>
+                {/* Altri dettagli che vuoi includere solo nell'espansione */}
+              </div>
+            )}
+
+            {/* Offerta Prezzo */}
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 GAP">
+              <p className="text-lg font-semibold text-gray-800">
+                La nostra offerta:
+              </p>
+              <h2 className="text-4xl font-semibold ">
+                €{estimatePrice.toFixed(2)}
+              </h2>
+            </div>
+          </div>
+
+          {/* Testo informativo in basso */}
+          <p className="text-sm text-gray-500 leading-5 mt-4">
+            Dopo aver inserito nel carrello il trade-in ti manderemo, nel giro
+            di 1-3 giorni lavorativi, tutto l'occorrente per spedirci il tuo
+            dispositivo gratuitamente. Quando riceveremo il tuo dispositivo ci
+            riserveremo 2-3 giorni lavorativi per testarlo, dopodiché ti
+            invieremo l'importo stimato.
           </p>
 
-          <div className="bg-[#D1FCEE] my-6 p-6 rounded-lg">
-            <h2 className="text-[#007B52] text-center text-5xl font-semibold leading-[]">
-              ${estimatePrice}
-            </h2>
-
-            <p className="text-base text-center max-w-80 mx-auto text-[#007B52] leading-6 mt-4">
-              The estimated value is reimbursed after purchasing your new device
-              and inspection of your old device
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-semibold text-lg text-[#101010]">What Next?</h3>
-            <ol className="space-y-3">
-              <li className="flex gap-4">
-                <div className="font-semibold text-[#007B52] text-xl">1</div>
-                <div>
-                  <h4 className="font-medium text-lg text-[#101010]">
-                    Get your new phone
-                  </h4>
-                  <p className="text-base text-[#5F5F5F]">
-                    You&apos;ll keep your old phone until your new one arrives.
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <div className="font-semibold text-[#007B52] text-xl">2</div>
-                <div>
-                  <h4 className="font-medium text-lg text-[#101010]">
-                    Send your old phone for free
-                  </h4>
-                  <p className="text-base text-[#5F5F5F]">
-                    You&apos;ll keep your old phone until your new one arrives.
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <div className="font-semibold text-[#007B52] text-xl">3</div>
-                <div>
-                  <h4 className="font-medium text-lg text-[#101010]">
-                    Get paid
-                  </h4>
-                  <p className="text-base text-[#5F5F5F]">
-                    We'll inspect the device and make the refund in 2-3 days
-                    after we have receive your phone
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </div>
-
-          <div className="bg-blue-50 p-4 my-2 rounded-lg flex gap-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6 text-blue-600 flex-shrink-0"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-              />
-            </svg>
-            <p className="text-sm text-blue-600">
-              We are not able to return any accessories or packaging sent with
-              the device.
-            </p>
-          </div>
-
-          <div className="flex gap-4 justify-end my-3">
+          {/* Bottoni finali */}
+          <div className="flex gap-4 justify-end mt-10 bg-white">
             <button
               onClick={() => dispatch(toggleModal())}
-              className="text-base font-medium text-[#222C9B]"
-            >
+              className="py-3 px-3 rounded-xl text-base font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors">
               SKIP TRADE-IN
             </button>
             <button
               onClick={() => addTradeIn()}
-              className="py-3 px-[30px] rounded-3xl text-base font-medium text-[#FDFDFD] bg-[#222C9B]"
-            >
+              className="py-3 px-6 rounded-xl text-base font-medium text-[#FDFDFD] bg-orange-500 hover:bg-orange-600 transition-colors">
               ADD TRADE-IN
             </button>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+    return null;
   };
 
+  // ----------------------- COMPONENTE PRINCIPALE -----------------------
+
   return (
-    <Modal open={isModalOpen} onCancel={handleCancel} footer={null}>
+    <Modal
+      open={isModalOpen}
+      onCancel={handleCancel}
+      footer={null}
+      width={600}
+      height={-10}
+      closable={false}
+      styles={{
+        content: { backgroundColor: "#eae9ef" },
+      }}
+      style={{
+        top: "50%",
+        right: 0,
+      }}>
       {renderContent()}
     </Modal>
   );

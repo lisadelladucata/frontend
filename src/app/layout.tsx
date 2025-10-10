@@ -7,8 +7,8 @@ import { Header } from "@/components/home/header/Header";
 import { Toaster } from "react-hot-toast";
 import "../i18n";
 import Providers from "@/redux/Provider";
+import CookieBanner from "./CookieBanner";
 
-// Load the Poppins font with correct configuration
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -21,21 +21,20 @@ export const metadata: Metadata = {
   description: "Console Locker",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang='en'>
+    <html lang="en">
       <body
         className={`antialiased ${poppins.className}`}
         // upword-verified='true'
-        data-new-gr-c-s-check-loaded='14.1233.0'
-        data-gr-ext-installed=''
-        cz-shortcut-listen='true'
-      >
-        <Toaster position='top-center' />
+        data-new-gr-c-s-check-loaded="14.1233.0"
+        data-gr-ext-installed=""
+        cz-shortcut-listen="true">
+        <Toaster position="top-center" />
         <Providers>
           <AntdRegistry>
             <Header />
@@ -43,6 +42,8 @@ export default async function RootLayout({
             <ConsoleFooter />
           </AntdRegistry>
         </Providers>
+
+        <CookieBanner />
       </body>
     </html>
   );

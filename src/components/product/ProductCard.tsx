@@ -1,104 +1,70 @@
-import Link from 'next/link';
+// src/components/product/ProductCard.tsx
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import Link from "next/link";
+
+interface ProductCardProps {
+  product: any;
+  layout: "new" | "default" | "photo";
+}
+
+const getConditionText = (condition: string) => {
+  const normalizedcondition = condition.toLowerCase();
+
+  switch (normalizedcondition) {
+    case "new":
+      return "Il dispositivo è come nuovo";
+    case "accettabile":
+      return "Il dispositivo è in condizioni accettabili";
+    case "eccellente":
+      return "Il dispositivo è in condizioni eccellenti";
+    case "ottimo":
+      return "Il dispositivo è in ottime condizioni";
+    default:
+      return "Condizione non specificata";
+  }
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export default function ProductCard({
-	product,
-	type = 'grid',
-	layout = 'old',
-}: {
-	product: {
-		_id: string;
-		name: string;
-		model: string;
-		images: string[];
-		product_type: string;
-		slug: string;
-		offer_price: number;
-		price: number;
-		brand: string;
-		condition: string;
-		controller: string;
-		memory: string;
-		quantity: number;
-		isVariant: boolean;
-		caption: string;
-	};
-	type?: 'grid' | 'list';
-	layout?: 'old' | 'new';
-}) {
-	return (
-		<Link
-			href={`/buy/${product?.slug}`}
-			key={product?._id}
-			className={`bg-white hover:bg-gray-200 rounded-lg overflow-hidden shadow-sm ${
-				type !== 'grid' ? 'grid grid-cols-2 items-center' : ''
-			}`}
-		>
-			<div
-				className={`aspect-square ${layout === 'new' ? 'p-1.5' : 'p-0'} md:p-0`}
-			>
-				<img
-					src={`${API_URL}${product?.images[0]}`}
-					alt={product?.name}
-					className='w-full aspect-square rounded-t-lg bg-cover bg-center'
-					style={{
-						backgroundImage: `url('/sell/${product?.product_type}-sq.jpeg')`,
-					}}
-				/>
-			</div>
+export default function ProductCard({ product, layout }: ProductCardProps) {
+  const productUrl = `/buy/${product?.slug}`;
+  const priceValue = product.price ? Math.floor(product.price) : "N/A";
+  const formattedPrice =
+    priceValue !== "N/A" ? `€${priceValue}` : "Prezzo non disponibile";
+  const conditionText = getConditionText(product.condition);
+  return (
+    <Link
+      href={productUrl}
+      className="block group bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300 h-full flex flex-col overflow-hidden">
+      <div className="relative aspect-[4/3] w-full bg-blue-500/10 flex items-center justify-center">
+        <img
+          src={`${API_URL}${product?.images[0]}`}
+          alt={product?.name}
+          className="w-full aspect-square rounded-t-lg bg-cover bg-center"
+          style={{
+            backgroundImage: `url('/sell/${product?.product_type}-sq.jpeg')`,
+          }}
+        />
+      </div>
+      <div className="p-3 pb-2 flex-grow flex flex-col justify-between">
+        <div className="flex justify-between items-start **gap-1**">
+          <h3 className="text-base font-bold text-gray-900 leading-tight  transition-colors line-clamp-2">
+            {product.name}
+          </h3>
 
-			{layout === 'old' ? (
-				<div className='px-3'>
-					<h3 className='text-xl text-[#101010] font-semibold mb-2 mt-5'>
-						{product?.name}
-					</h3>
-					<div className='text-[#2B2B2B] mb-2 flex items-center justify-between'>
-						<div>
-							Condition: &nbsp;
-							<span className='font-medium text-[#2B2B2B] capitalize'>
-								{product?.condition}
-							</span>
-						</div>
-					</div>
-					<div className='flex items-center gap-3 text-[#2B2B2B] mb-4'>
-						<div className='flex items-center gap-2'>
-							<p className='text-[#2B2B2B] text-base'>Price:</p>
-							<span className='text-[#00B67A] text-lg font-semibold'>
-								{product?.offer_price}
-							</span>
-						</div>
-						<span className='text-sm text-[#919191] line-through'>
-							New: {product?.price}
-						</span>
-					</div>
-				</div>
-			) : (
-				<div>
-					<div className='p-2 pt-0 md:p-4 grow'>
-						<div className='flex justify-between items-start'>
-							<div className='flex flex-col'>
-								<h3 className='flex-1 font-semibold text-[#101010] text-base mb-0 lg:mb-2.5 flex flex-wrap'>
-									<span className=''>
-										{product?.name} {product?.model}
-									</span>
-								</h3>
-								<p className='text-[#2B2B2B] text-xs md:text-base space-x-1 pb-1.5'>
-									<span>A partire da</span>
-									<span className='text-[#00B67A] text-xs md:text-lg font-medium leading-'>
-										&euro;{product?.offer_price}
-									</span>
-								</p>
-							</div>
-						</div>
-					</div>
-					{product?.caption && product?.caption !== 'undefined' && (
-						<p className='text-[#2B2B2B] text-xs md:text-sm p-2 md:p-4 grow border-t border-gray-300'>
-							{product?.caption}
-						</p>
-					)}
-				</div>
-			)}
-		</Link>
-	);
+          <p className="text-xl font-extrabold text-gray-900 whitespace-nowrap">
+            {formattedPrice}
+          </p>
+        </div>
+        <p className="text-base text-gray-900 leading-tight  transition-colors line-clamp-2">
+          {product.model}
+        </p>
+
+        <hr />
+
+        <p className="text-sm text-gray-700 mt-auto pt-1">{conditionText}</p>
+      </div>
+    </Link>
+  );
 }

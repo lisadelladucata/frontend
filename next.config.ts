@@ -6,13 +6,29 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    domains: [
-      "192.168.10.132",
-      "115.127.156.132",
-      "192.168.10.149",
-      "192.168.10.251",
-      "api.consolelocker.it"
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "3000",
+        pathname: "/images/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.consolelocker.it",
+        port: "",
+        pathname: "/images/**",
+      },
     ],
+  },
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: "https://api.consolelocker.it/api/v1/:path*",
+      },
+    ];
   },
 };
 

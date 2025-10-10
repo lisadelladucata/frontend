@@ -74,98 +74,87 @@ export function Header() {
   }, [isAggreed]);
 
   return (
-    <header className='top-0 md:pt-4 w-full  border-b bg-[#F2F5F7]'>
+    <header className="top-0 md:pt-4 w-full  border-b bg-[#F2F5F7]">
       <div
-        className='
-       h-14 lg:h-[96px] container mx-auto flex items-center justify-between px-4'
-      >
-        <div className='flex items-center'>
+        className="
+       h-14 lg:h-[96px] container mx-auto flex items-center justify-between px-4">
+        <div className="flex items-center">
           <Button
-            variant='ghost'
-            size='icon'
-            className='mr-2 lg:hidden absolute left-2.5'
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <Menu size={32} className='text-gray-700' />
-            <span className='sr-only'>Toggle menu</span>
+            variant="ghost"
+            size="icon"
+            className="mr-2 lg:hidden absolute left-2.5"
+            onClick={() => setIsMobileMenuOpen(true)}>
+            <Menu size={32} className="text-gray-700" />
+            <span className="sr-only">Toggle menu</span>
           </Button>
 
           <Link
-            href='/'
-            className='absolute md:static left-1/2 md:left-0 transform -translate-x-1/2 md:translate-x-0 flex items-center space-x-1'
-          >
-            <div className='relative h-8 w-44 pt-1'>
+            href="/"
+            className="absolute md:static left-1/2 md:left-0 transform -translate-x-1/2 md:translate-x-0 flex items-center space-x-1">
+            <div className="relative h-8 w-44 pt-1">
               <Image
-                src='/home/logo.png'
-                alt='Console Locker'
+                src="/home/logo.png"
+                alt="Console Locker"
                 width={700}
                 height={200}
-                className='object-contain'
+                className="object-contain"
               />
-            </div>
-          </Link>
-          <Link href='/cart' className='md:hidden absolute md:static right-5'>
-            <div className='relative'>
-              <ShoppingCart className='h-6 w-6' />
-              <span className='absolute px-2 py-[2px] bg-green-500 text-black rounded-full text-xs -top-3 -right-2.5'>
-                {cartLength}
-              </span>
             </div>
           </Link>
         </div>
 
-        <nav className='hidden lg:flex items-center space-x-3 lg:space-x-12'>
-          <Link href='/' className='text-sm font-medium'>
+        <nav className="hidden lg:flex items-center space-x-3 lg:space-x-12">
+          <Link href="/" className="text-sm font-medium">
             Home
           </Link>
           <DropdownMenu>
-            <DropdownMenuTrigger className='flex items-center space-x-1.5 text-sm font-medium'>
+            <DropdownMenuTrigger className="flex items-center space-x-1.5 text-sm font-medium">
               <span>Acquista</span>
-              <ChevronDown className='h-4 w-4' />
+              <ChevronDown className="h-4 w-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align='start'>
+            <DropdownMenuContent align="start">
               <DropdownMenuItem>
-                <Link href='/buy/playstation' className='w-full px-5'>
+                <Link href="/buy/playstation" className="w-full px-5">
                   PlayStation
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link href='/buy/xbox' className='w-full px-5'>
+                <Link href="/buy/xbox" className="w-full px-5">
                   Xbox
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link href='/buy/nintendo' className='w-full px-5'>
+                <Link href="/buy/nintendo" className="w-full px-5">
                   Nintendo
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href='/sell' className='text-sm font-medium'>
+          <Link href="/sell" className="text-sm font-medium">
             Vendi
           </Link>
 
-          <Link href='/about' className='text-sm font-medium'>
+          <Link href="/about" className="text-sm font-medium">
             Chi Siamo
           </Link>
-          <Link href='/reviews' className='text-sm font-medium'>
+          <Link href="/reviews" className="text-sm font-medium">
             Recensioni
           </Link>
-          <Link href='/contact' className='text-sm font-medium'>
+          <Link href="/contact" className="text-sm font-medium">
             Contatto
           </Link>
         </nav>
 
         {/* hide in mobile menu */}
-        <div className='hidden lg:flex items-center space-x-4'>
-          <Link href='/cart' className='p-2 relative'>
-            <ShoppingCart className='h-5 w-5' />
-            <span className='absolute px-2 py-[2px] bg-green-500 text-black rounded-full text-xs -top-1 -right-1'>
+        <div className="hidden lg:flex items-center space-x-4">
+          <Link href="/cart" className="p-2 relative">
+            <ShoppingCart className="h-5 w-5" />
+            <span className="absolute px-2 py-[2px] bg-green-500 text-black rounded-full text-xs -top-1 -right-1">
               {cartLength}
             </span>
           </Link>
 
-          <div className='hidden sm:flex items-center space-x-1 text-sm font-medium cursor-pointer'>
+          <div className="hidden sm:flex items-center space-x-1 text-sm font-medium cursor-pointer">
             <LanguageSelector />
           </div>
         </div>

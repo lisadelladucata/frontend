@@ -1,23 +1,44 @@
-import { createSlice } from "@reduxjs/toolkit";
-
-interface showTradeIn {
-    isOpenTradeIn: boolean
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+interface ShowTradeInState {
+  isOpenTradeIn: boolean;
+  isTradeInValuationComplete: boolean;
+  tradeInFinalValue: number;
 }
 
-const initialState : showTradeIn= {
+const initialState: ShowTradeInState = {
   isOpenTradeIn: false,
+  isTradeInValuationComplete: false,
+  tradeInFinalValue: 0,
 };
 
 const showTradeInSlice = createSlice({
-  name: "isOpenTradeIn",
+  name: "showTradeIn",
   initialState,
   reducers: {
-    showTradeInDescription: (state) => {
-      state.isOpenTradeIn = !state.isOpenTradeIn;  
+    toggleTradeIn: (state) => {
+      state.isOpenTradeIn = !state.isOpenTradeIn;
+      if (!state.isOpenTradeIn) {
+        state.isTradeInValuationComplete = false;
+        state.tradeInFinalValue = 0;
+      }
+    },
+
+    completeTradeInValuation: (state, action: PayloadAction<number>) => {
+      state.isTradeInValuationComplete = true;
+      state.tradeInFinalValue = action.payload;
+    },
+
+    resetTradeInValuation: (state) => {
+      state.isTradeInValuationComplete = false;
+      state.tradeInFinalValue = 0;
     },
   },
 });
 
-export const { showTradeInDescription } = showTradeInSlice.actions;
+export const {
+  toggleTradeIn,
+  completeTradeInValuation,
+  resetTradeInValuation,
+} = showTradeInSlice.actions;
 
 export default showTradeInSlice.reducer;

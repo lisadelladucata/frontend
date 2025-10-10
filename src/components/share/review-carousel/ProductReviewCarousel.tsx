@@ -2,11 +2,11 @@
 
 import { DownOutlined } from "@ant-design/icons";
 import { useState } from "react";
+// Assicurati che ReviewCard sia stilizzato per la griglia (non ha bisogno di flex-none/mr-4)
 import ReviewCard from "./ReviewCard";
 import Container from "@/components/common/Container";
 import { useGetReviewsQuery } from "@/redux/features/review/ReviewAPI";
 import { Spin } from "antd";
-// Rimosso l'import di useRouter: non è più necessario per il toggle
 
 interface IReview {
   comment: string;
@@ -18,21 +18,21 @@ interface IReview {
   _id: string;
 }
 
-export default function ReviewCarousel({
+export default function ProductReviewGrid({
+  // Rinominato per riflettere il layout a griglia
   productName,
 }: {
   productName: string;
 }) {
-  // STATO CHIAVE: Controlla se mostrare solo le prime 4 o tutte le caricate (max 9)
+  // STATO CHIAVE: Controlla se mostrare solo le prime recensioni o tutte
   const [isExpanded, setIsExpanded] = useState(false);
 
   const filterKey = productName || "";
-  const INITIAL_LIMIT = 2; // Mostriamo 4 recensioni inizialmente
+  const INITIAL_LIMIT = 2; // Numero di recensioni da mostrare inizialmente
 
   const {
     data: reviews,
     isFetching,
-    refetch,
     isError,
   } = useGetReviewsQuery({
     productName: filterKey,
@@ -40,8 +40,8 @@ export default function ReviewCarousel({
     limit: 9, // Carica 9 recensioni dal backend
   });
 
-  // LOGICA CHIAVE: Mostra tutte se espanso, altrimenti solo le prime 4.
   const allReviews = reviews?.data?.reviews || [];
+  // LOGICA CHIAVE: Mostra tutte se espanso, altrimenti solo le prime 'INITIAL_LIMIT'
   const displayedReviews = isExpanded
     ? allReviews
     : allReviews.slice(0, INITIAL_LIMIT);
@@ -54,10 +54,9 @@ export default function ReviewCarousel({
   };
 
   return (
-    <div className={`mb-10 lg:py-16 bg-transparent`}>
+    // Ho rimosso le classi di padding verticale extra e background per lasciare più controllo al genitore
+    <div className={`mb-10 `}>
       <Container>
-        {/* Gestione stati omessa */}
-
         {isFetching && !allReviews.length ? (
           <div className="flex justify-center py-8">
             <Spin size="large" />
@@ -69,9 +68,13 @@ export default function ReviewCarousel({
               : "Nessuna recensione disponibile!"}
           </p>
         ) : (
-          // CONTENITORE GRIGLIA
+          /* ======================================================= */
+          /* CONTENITORE GRIGLIA / LAYOUT VERTICALE */
+          /* ======================================================= */
+          // Griglia che mostra 1 colonna su mobile e 2 su desktop.
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
             {displayedReviews.map((review: IReview) => (
+              // Le ReviewCard sono disposte una sotto l'altra o su due colonne
               <ReviewCard key={review._id} {...review} />
             ))}
           </div>
@@ -80,21 +83,21 @@ export default function ReviewCarousel({
         {/* Bottone "Visualizza/Nascondi recensioni" */}
         {/* Mostra il pulsante solo se ci sono più recensioni di quelle iniziali */}
         {totalAvailableReviews > INITIAL_LIMIT && (
+          // Lo sfondo del bottone è stato modificato per assomigliare di più allo screenshot (Rosso scuro)
           <div className="mt-8 flex justify-center">
             <button
-              onClick={handleToggleReviews} // Ora esegue il toggle
+              onClick={handleToggleReviews} // Toggle
               className="w-full max-w-sm flex items-center justify-center gap-2 p-3 
-                            bg-white text-gray-900 text-base font-semibold 
-                            rounded-lg border border-gray-400 
-                            transition-shadow">
-              {/* Testo dinamico: Mostra "Nascondi" quando espanso */}
+                         text-white text-base font-semibold 
+                        rounded-lg shadow-md border-b-2 border-[#A01617]
+                        transition-colors">
               {isExpanded
-                ? "Nascondi recensioni"
-                : "Visualizza tutte le recensioni"}
+                ? `Nascondi recensioni`
+                : `Visualizza tutte le ${totalAvailableReviews} recensioni`}
 
-              {/* Icona dinamica: ruotata di 180 gradi (freccia in su) se espansa */}
               <DownOutlined
-                className={`text-sm ${
+                // Icona bianca e rotazione
+                className={`text-white text-sm ${
                   isExpanded ? "rotate-180" : ""
                 } transition-transform`}
               />
