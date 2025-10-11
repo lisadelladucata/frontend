@@ -3,21 +3,20 @@
 import { DownOutlined } from "@ant-design/icons";
 import { useState } from "react";
 // Assicurati che ReviewCard sia stilizzato per la griglia (non ha bisogno di flex-none/mr-4)
-import ReviewCard from "./ReviewCard";
+import ProductReviewCard from "./ProductReviewCard";
 import Container from "@/components/common/Container";
 import { useGetReviewsQuery } from "@/redux/features/review/ReviewAPI";
 import { Spin } from "antd";
 
 interface IReview {
   comment: string;
-  createdAt: string;
-  customer: { name: string; avatar: string };
+  createdAt: string; // La data è qui
+  customer: { name: string; avatar: string }; // L'utente è qui
   product: string;
   rating: number;
   updatedAt: string;
-  _id: string;
+  _id: string; // L'ID è qui
 }
-
 export default function ProductReviewGrid({
   // Rinominato per riflettere il layout a griglia
   productName,
@@ -55,7 +54,7 @@ export default function ProductReviewGrid({
 
   return (
     // Ho rimosso le classi di padding verticale extra e background per lasciare più controllo al genitore
-    <div className={`mb-10 `}>
+    <div>
       <Container>
         {isFetching && !allReviews.length ? (
           <div className="flex justify-center py-8">
@@ -75,7 +74,7 @@ export default function ProductReviewGrid({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
             {displayedReviews.map((review: IReview) => (
               // Le ReviewCard sono disposte una sotto l'altra o su due colonne
-              <ReviewCard key={review._id} {...review} />
+              <ProductReviewCard review={review} key={review._id} />
             ))}
           </div>
         )}
@@ -89,7 +88,7 @@ export default function ProductReviewGrid({
               onClick={handleToggleReviews} // Toggle
               className="w-full max-w-sm flex items-center justify-center gap-2 p-3 
                          text-white text-base font-semibold 
-                        rounded-lg shadow-md border-b-2 border-[#A01617]
+                        rounded-lg shadow-md  border-transparent
                         transition-colors">
               {isExpanded
                 ? `Nascondi recensioni`

@@ -65,7 +65,7 @@
 
 "use client";
 
-import { Card } from "antd";
+import Card from "antd/lib/card";
 import Image from "next/image";
 import Link from "next/link";
 

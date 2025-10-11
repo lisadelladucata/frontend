@@ -65,6 +65,7 @@ export default function ConsoleSelector() {
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
+          // @ts-ignore
           className="custom-tabs"
           items={[
             {

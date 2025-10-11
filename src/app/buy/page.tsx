@@ -421,7 +421,7 @@ const ProductPage: React.FC = () => {
                   <ProductCard
                     product={product}
                     key={product._id}
-                    layout="old" // <-- MODIFICA CHIAVE 3: Usa il layout flessibile 'old'
+                    layout="photo" // <-- MODIFICA CHIAVE 3: Usa il layout flessibile 'old'
                   />
                 ))}
               </div>
@@ -433,7 +433,7 @@ const ProductPage: React.FC = () => {
                   <ProductCard
                     product={product}
                     key={product._id}
-                    type="list"
+                    layout="photo"
                     // Lascia il layout come 'old' (default) o come desiderato
                   />
                 ))}
