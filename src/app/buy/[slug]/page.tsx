@@ -42,10 +42,8 @@ const ProductDetailsPage: React.FC = () => {
   const [openAccordion, setOpenAccordion] = useState<string>("");
 
   const dispatch = useDispatch();
-  const modalState = useSelector((state: RootState) => state?.modal?.modal);
-  const isOpenTradeIn = useSelector(
-    (state: RootState) => state?.showTradeInData?.isOpenTradeIn
-  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOpenTradeIn, setIsOpenTradeIn] = useState(false);
 
   const modalTradeInData: ModalTradeInData | null = useSelector(
     (state: RootState) =>
@@ -151,13 +149,20 @@ const ProductDetailsPage: React.FC = () => {
     { label: "NO", value: "NO" },
   ];
 
-  const handleTrade = () => {
-    dispatch(toggleModal());
+  const handleOpenModal = () => {
+    dispatch(toggleModal()); // Usa Redux per aprire la modale
+    setIsModalOpen(true); // (opzionale: puoi rimuovere questo stato locale se non serve altrove)
+  };
+  const handleCloseModal = () => {
+    dispatch(toggleModal()); // Chiudi la modale Redux
+    setIsModalOpen(false);
   };
 
-  // const startOver = () => {
-  //   dispatch(toggleModal());
-  // };
+  const handleCompleteTradeIn = (tradeInData: any) => {
+    // Salva i dati se serve
+    setIsModalOpen(false);
+    setIsOpenTradeIn(true);
+  };
 
   const handleAddToCart = () => {
     dispatch(modifiedCart({}));
@@ -306,7 +311,7 @@ const ProductDetailsPage: React.FC = () => {
       <p className="font-bold">{product.product?.name} - Console Portatile</p>
       <p>
         {/* Assumiamo che qui vada la descrizione lunga (long_description) */}
-        La console è la versione compatta e leggera della celebre console{" "}
+        La console è la versione compatta e leggera della celebre console
         {product.product?.name}, pensata per il gioco esclusivamente portatile.
         Con il suo design elegante e i comandi integrati, è perfetta per
         divertirsi ovunque.
@@ -391,7 +396,6 @@ const ProductDetailsPage: React.FC = () => {
           return (
             // Rimosso il vecchio topBorder, ora ogni blocco è separato da space-y-4
             <div key={item.question} className="pb-0 overflow-hidden shadow-lg">
-              {" "}
               {/* Aggiunto overflow-hidden e un'ombra opzionale */}
               {/* Domanda (Header) */}
               <div
@@ -913,10 +917,10 @@ const ProductDetailsPage: React.FC = () => {
                     key={value}
                     onClick={() => {
                       if (value === "SI") {
-                        handleTrade(); // Apre/Chiude il modale
+                        handleOpenModal(); // Apre/Chiude il modale
                       } else if (isOpenTradeIn) {
                         // Selezionando NO, chiudi e resetta se era attivo
-                        handleTrade();
+                        handleCloseModal();
                         // Se necessario, aggiungi qui l'azione per resettare il valore della permuta
                       }
                     }}
@@ -1011,7 +1015,7 @@ const ProductDetailsPage: React.FC = () => {
             )}
             {/* ------------------------------------------------------------------ */}
 
-            {modalState && <ConsoleModal />}
+            {isModalOpen && <ConsoleModal />}
           </div>
         </div>
         {/* submit button */}
@@ -1069,7 +1073,7 @@ const ProductDetailsPage: React.FC = () => {
             <div className="flex items-center space-x-3">
               <ShieldCheck className="h-6 w-6 text-gray-600 flex-shrink-0" />
               <p className="text-lg text-[#101010] font-medium">
-                Riconfezionato -{" "}
+                Riconfezionato -
                 <span className="font-bold">12 Mesi di garanzia.</span>
               </p>
             </div>

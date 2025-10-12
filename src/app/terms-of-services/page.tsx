@@ -6,9 +6,7 @@ export default function PrivacyPolicy() {
   return (
     <main className="min-h-screen py-16 lg:py-20 px-4 md:px-6 lg:px-8 bg-[#F2F5F7]">
       <Container>
-        <h1 className="text-3xl font-bold text-center">
-          Terms of Services
-        </h1>
+        <h1 className="text-3xl font-bold text-center">Terms of Services</h1>
 
         <div className="min-h-screen py-5 px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto p-2 sm:p-8">
@@ -172,18 +170,16 @@ export default function PrivacyPolicy() {
                   <p>Via Ogaden 4, 00199 Rome</p>
                   <p>Italy</p>
                   <p>
-                    Website:{" "}
+                    Website:
                     <Link
                       href="https://consolelocker.it"
-                      className="text-[#222C9B] hover:underline"
-                    >
+                      className="text-[#222C9B] hover:underline">
                       https://consolelocker.it
                     </Link>
                   </p>
                   <Link
                     href="https://consolelocker.it"
-                    className="text-[#222C9B] hover:underline"
-                  >
+                    className="text-[#222C9B] hover:underline">
                     Email: info@consolelocker.it
                   </Link>
                   <p>Phone number: 392.0515775</p>

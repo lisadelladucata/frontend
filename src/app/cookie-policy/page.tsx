@@ -196,17 +196,16 @@ export default function CookiePolicy() {
               Via Ogaden 4, 00199 Rome
             </p>
             <p className="text-lg text-[#404040] leading-7">
-              Website:{" "}
+              Website:
               <Link href="https://consolelocker.it" className="text-blue-500">
                 https://consolelocker.it
               </Link>
             </p>
             <p className="text-lg text-[#404040] leading-7">
-              Email:{" "}
+              Email:
               <Link
                 href="mailto:info@consolelocker.it"
-                className="text-blue-500"
-              >
+                className="text-blue-500">
                 info@consolelocker.it
               </Link>
             </p>
@@ -214,13 +213,12 @@ export default function CookiePolicy() {
               Phone number: 3924015975
             </p>
             <p className="text-lg text-[#404040] leading-7">
-              This cookie policy was synchronized with{" "}
+              This cookie policy was synchronized with
               <Link
                 href="https://www.cookiedatabase.org/"
-                className="text-blue-500"
-              >
+                className="text-blue-500">
                 cookiedatabase.org
-              </Link>{" "}
+              </Link>
               on January 6, 2025
             </p>
           </section>
@@ -230,8 +228,7 @@ export default function CookiePolicy() {
           {policy.map((item) => (
             <div
               key={item.id}
-              className="text-center bg-[#FDFDFD] py-8 px-6 rounded-lg shadow-sm"
-            >
+              className="text-center bg-[#FDFDFD] py-8 px-6 rounded-lg shadow-sm">
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 rounded bg-blue-100 flex items-center justify-center">
                   <Image

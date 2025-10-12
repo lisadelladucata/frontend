@@ -1,18 +1,32 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import Container from "@/components/common/Container";
 import { useGetProductsByIdsQuery } from "@/redux/features/products/GetProductByIds";
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import Loading from "../loading";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { modifiedCart } from "@/redux/features/cart/TrackCartItem";
 import { useRouter } from "next/navigation";
+import Loading from "../loading";
+import React from "react";
 
+// Assicurati che il percorso sia corretto. Ho usato 'ProductReviewGrid' come nome più probabile
+// dato il contesto dei problemi precedenti. Se usi il carosello, assicurati che la prop sia solo la stringa!
+import CartReviewGrid from "@/components/share/review-carousel/CartReviewCarousel";
+
+// IMPORTAZIONI DELLE ICONE
+import {
+  ShieldCheck,
+  Truck,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Minus,
+} from "lucide-react";
+
+// Assumiamo che la struttura del prodotto sia la seguente
 interface IProduct {
   _id: string;
   admin: string;
@@ -31,28 +45,38 @@ interface IProduct {
   product_type: string;
   slug: string;
   __v: number;
+  technical_specs?: { label: string; value: string }[];
 }
 
 export default function CartPage() {
-  const [coupon, setCoupon] = useState<string>("");
-  const { t } = useTranslation();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  // Ripristinato l'uso della variabile d'ambiente per l'URL API
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "https://api.consolelocker.it";
   const dispatch = useDispatch();
+  const router = useRouter();
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
   const getProductIds = () => {
-    const cart = JSON.parse(localStorage?.getItem("cart") || "[]"); // Retrieve cart data
+    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
     const productIds: string[] = cart?.map(
       (item: { productId: string; tradeIn: any }) => item.productId
     );
     return productIds.join(",");
   };
-  const router = useRouter();
 
   const {
     data: products,
     isLoading,
     refetch,
   } = useGetProductsByIdsQuery(getProductIds());
+
+  // DATI DINAMICI DERIVATI DAL CARRELLO
+  const product = { product: products?.data?.products?.[0] };
+  // const productType = product.product?.product_type?.toLowerCase() || "default"; // Lascio commentato se non usato
+
+  // ************************************************************
+  // FUNZIONI DI CARRELLO COMPLETE
+  // ************************************************************
 
   const getProductQuantity = (id: string) => {
     const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
@@ -79,8 +103,11 @@ export default function CartPage() {
     (total: number, product: IProduct) => {
       const quantity = getProductQuantity(product?._id);
 
-      // Multiply the quantity by the offer price of the product
-      return total + quantity * product.offer_price;
+      // Usiamo il prezzo in offerta se esiste
+      const price =
+        product.offer_price > 0 ? product.offer_price : product.price;
+
+      return total + quantity * price;
     },
     0
   );
@@ -88,9 +115,51 @@ export default function CartPage() {
   const shipping = 0;
   const total = subtotal + shipping;
 
-  if (isLoading) {
-    return <Loading />;
-  }
+  const getTradeInDetails = () => {
+    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
+    const tradeInItem = cart.find(
+      (item: any) => item.tradeIn && Object.keys(item.tradeIn).length > 0
+    );
+
+    if (!tradeInItem) return null;
+
+    return {
+      name: tradeInItem.tradeIn.name || "Prodotto Sconosciuto",
+      condition: tradeInItem.tradeIn.condition || "N/D",
+      memory: tradeInItem.tradeIn.memory || "N/D",
+      controllerCount: tradeInItem.tradeIn.controllerCount || 0,
+      technicalIssues: tradeInItem.tradeIn.technicalIssues || "No",
+      originalAccessories: tradeInItem.tradeIn.originalAccessories || "Sì",
+      tradeInValue: tradeInItem.tradeIn.value || 0,
+      imagePath: tradeInItem.tradeIn.imagePath || "/placeholder.png",
+      // Il prezzo originale dovrebbe essere la somma di tutti gli articoli, non solo il totale (gestito sotto)
+      originalPrice: subtotal,
+    };
+  };
+
+  const tradeInDetails = getTradeInDetails();
+  const totalAfterTradeIn = tradeInDetails
+    ? total - tradeInDetails.tradeInValue
+    : total;
+
+  const removeTradeIn = () => {
+    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
+    const updatedCart = cart.map((item: any) => {
+      if (item.tradeIn) {
+        // Rimuove la chiave tradeIn dall'oggetto
+        const { tradeIn, ...rest } = item;
+        return rest;
+      }
+      return item;
+    });
+
+    localStorage?.setItem("cart", JSON.stringify(updatedCart));
+    refetch();
+    dispatch(modifiedCart({}));
+    router.refresh(); // Forza il re-render se necessario
+  };
+
+  // Funzioni per l'aumento/diminuzione della quantità (necessarie per la sezione "Potrebbe anche interessarti")
 
   const handleAddToCart = (id: string) => {
     refetch();
@@ -103,7 +172,6 @@ export default function CartPage() {
       quantity: 1,
     };
 
-    // Check if the productId already exists to prevent duplicates
     interface CartItem {
       productId: string;
       quantity: number;
@@ -128,15 +196,13 @@ export default function CartPage() {
 
     if (!isDuplicate) {
       toast.success("Product added to cart successfully!");
-      existingCart.push(newProduct); // Add new product
-      localStorage?.setItem("cart", JSON.stringify(existingCart)); // Save updated cart
+      existingCart.push(newProduct);
+      localStorage?.setItem("cart", JSON.stringify(existingCart));
     }
-
-    // router.push("/cart");
+    router.refresh();
   };
 
   const increaseQuantity = (id: string) => {
-    // Get the cart data from localStorage?
     refetch();
     const cartData = JSON.parse(localStorage?.getItem("cart") || "[]");
 
@@ -147,22 +213,19 @@ export default function CartPage() {
       return;
     }
 
-    // Check if the product exists in the cart
     const updatedCart = cartData?.map((item: any) => {
       if (item.productId === id) {
-        return { ...item, quantity: item.quantity + 1 }; // Increase quantity
+        return { ...item, quantity: item.quantity + 1 };
       }
 
       return item;
     });
 
-    // Store the updated cart back into localStorage?
     localStorage?.setItem("cart", JSON.stringify(updatedCart));
   };
 
   const decreaseQuantity = (id: string) => {
     refetch();
-    // Get the cart data from localStorage?
     const cartData = JSON.parse(localStorage?.getItem("cart") || "[]");
 
     const itemExists = cartData.some((item: any) => item.productId === id);
@@ -172,50 +235,210 @@ export default function CartPage() {
       return;
     }
 
-    // Check if the product exists in the cart
     const updatedCart = cartData.map((item: any) => {
       if (item.productId === id && item.quantity > 1) {
-        // Decrease quantity only if it's greater than 1
         return { ...item, quantity: item.quantity - 1 };
       }
       return item;
     });
 
-    // Store the updated cart back into localStorage?
     localStorage?.setItem("cart", JSON.stringify(updatedCart));
   };
 
-  const handleCoupon = () => {
-    if (coupon.length > 0) {
-      toast.error("Coupon isn't available at the moment!");
-      setCoupon("");
-    }
-  };
-
+  // Funzione di checkout
   const handleCheckout = () => {
     if (products?.data?.products?.length === 0) {
       toast.error("Please, add the product first!");
-
       router.push("/buy");
     } else {
       router.push("/checkout");
     }
   };
 
+  // ************************************************************
+  // FINE FUNZIONI DI CARRELLO COMPLETE
+  // ************************************************************
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  // *******************************************************************
+  // INIZIO DEI COMPONENTI ACCORDION (Stili Neutri)
+  // *******************************************************************
+
+  const FAQ_ITEMS = [
+    {
+      question: "Le console sono nuove o ricondizionate?",
+      answer:
+        "Tutte le console che vendiamo sono ricondizionate (refurbished) e certificate dal nostro team di tecnici specializzati. Garantiamo standard di qualità elevatissimi.",
+    },
+    {
+      question: "Le console ricondizionate hanno garanzia?",
+      answer:
+        "Sì. Ogni console ricondizionata è coperta da garanzia come da normativa vigente. Offriamo 12 mesi di garanzia diretta su tutti i componenti hardware.",
+    },
+    {
+      question: "Quanto dura la garanzia e cosa copre?",
+      answer:
+        "La garanzia standard dura 12 mesi e copre qualsiasi difetto hardware non dovuto a uso improprio o danni accidentali. Per i dettagli completi, consultare i Termini e Condizioni.",
+    },
+    {
+      question: "Le console includono tutti i cavi per il funzionamento?",
+      answer:
+        "Sì, ogni console include un controller, il cavo di alimentazione e il cavo HDMI necessari per iniziare subito a giocare.",
+    },
+  ];
+
+  const dynamicDescriptionContent = (
+    <div className="text-gray-800 space-y-4">
+      <p className="font-bold">{product.product?.name} - Console</p>
+      <p>
+        La console è ricondizionata e certificata dal nostro team di tecnici
+        specializzati.
+      </p>
+
+      <p className="font-bold text-lg pt-2">Specifiche Tecniche</p>
+      <ul className="list-none space-y-1 text-sm">
+        {product.product?.memory && (
+          <li>
+            <span className="font-bold">Memoria:</span> {product.product.memory}
+          </li>
+        )}
+        {product.product?.controller && (
+          <li>
+            <span className="font-bold">Controller:</span>
+            {product.product.controller}
+          </li>
+        )}
+        <li>
+          <span className="font-bold">Condizione:</span>
+          {product.product?.condition || "Ricondizionato"}
+        </li>
+      </ul>
+
+      <p className="pt-2">
+        La console {product.product?.name} è pronta per il gioco.
+      </p>
+    </div>
+  );
+
+  const FaqAccordion = () => {
+    const [openFaq, setOpenFaq] = useState(
+      "Le console ricondizionate hanno garanzia?"
+    );
+
+    return (
+      <div className="space-y-4 max-w-xl bg-[#eae9ef] ">
+        {FAQ_ITEMS.map((item) => {
+          const isOpen = openFaq === item.question;
+
+          const headerBg = isOpen ? "bg-gray-100" : "bg-white";
+          const headerText = "text-gray-900";
+          const contentBg = "bg-white";
+          const separatorClass = "border-gray-200";
+
+          return (
+            <div
+              key={item.question}
+              className="pb-0 overflow-hidden border border-gray-200 rounded-lg shadow-sm bg-">
+              <div
+                className={`p-4 flex items-start justify-between cursor-pointer transition-colors duration-200 
+                            ${headerBg} ${headerText} ${
+                  isOpen ? "font-semibold" : "font-medium"
+                }`}
+                onClick={() => setOpenFaq(isOpen ? "" : item.question)}>
+                <h4 className="text-base pr-4">{item.question}</h4>
+
+                {isOpen ? (
+                  <Minus className="h-5 w-5 text-gray-700 flex-shrink-0" />
+                ) : (
+                  <Plus className="h-5 w-5 text-gray-700 flex-shrink-0" />
+                )}
+              </div>
+
+              {isOpen && (
+                <div
+                  className={`${contentBg} p-4 pt-3 border-t ${separatorClass}`}>
+                  <p className="text-gray-700 text-sm">{item.answer}</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const ACCORDION_ITEMS = [
+    { title: "Descrizione Prodotto", content: dynamicDescriptionContent },
+    {
+      title: "Garanzia Console Locker",
+      content: (
+        <p className="text-gray-800">
+          Le nostre console ricondizionate sono coperte da una garanzia completa
+          di 12 mesi contro difetti di fabbricazione. Per maggiori dettagli,
+          consulta la nostra sezione termini e condizioni.
+        </p>
+      ),
+    },
+    {
+      title: "FAQ",
+      content: <FaqAccordion />,
+    },
+  ];
+
+  const AccordionItem = ({
+    title,
+    content,
+  }: {
+    title: string;
+    content: React.ReactNode;
+  }) => {
+    // Usiamo lo stato globale della pagina
+    const isOpen = openAccordion === title;
+
+    const headerBgClass = "bg-white";
+    const contentBgClass = "bg-[#FDFDFD]";
+    const textColorClass = "text-gray-900";
+    const separatorClass = "border-gray-200";
+
+    return (
+      <div className={`mb-0 border-b ${separatorClass}`}>
+        <div
+          className={`p-4 flex items-center justify-between cursor-pointer transition-colors duration-200 
+                      ${headerBgClass}`}
+          onClick={() => setOpenAccordion(isOpen ? "" : title)}>
+          <h3 className={`font-semibold text-lg ${textColorClass}`}>{title}</h3>
+
+          {isOpen ? (
+            <ChevronUp className="h-6 w-6 text-gray-700" />
+          ) : (
+            <ChevronDown className="h-6 w-6 text-gray-700" />
+          )}
+        </div>
+
+        {isOpen && (
+          <div className={`bg-[#eae9ef] p-4 pt-2 border-t ${separatorClass}`}>
+            {content}
+          </div>
+        )}
+      </div>
+    );
+  };
+  // *******************************************************************
+  // FINE DEI COMPONENTI ACCORDION
+  // *******************************************************************
+
   return (
-    <div className="bg-white min-h-screen">
-      {/* Contenitore principale, impostato su bianco per riflettere lo screenshot */}
-
+    <div className="bg-[#eae9ef] min-h-screen">
       <div className="mx-5 py-4">
-        {/* Container per margini laterali e padding verticale per il titolo */}
-
-        {/* Intestazione del Carrello (Basato su Screenshot 2025-10-11 004910.png) */}
+        {/* Intestazione del Carrello */}
         <div className="mb-5">
           <h2 className="text-[32px] font-semibold text-[#101010]">
             Il tuo carrello
           </h2>
         </div>
-
         <div className="mb-5">
           <p className="text-base text-[#101010] font-medium">
             {products?.data?.products.length} articoli nel tuo carrello:
@@ -224,82 +447,185 @@ export default function CartPage() {
 
         {/* Lista degli Elementi nel Carrello */}
         <div className="flex flex-col gap-3">
-          {products?.data?.products?.map((product: IProduct) => (
-            <div
-              key={product?._id}
-              className="bg-white flex gap-3 p-3 border border-gray-200 rounded-lg shadow-sm" // Aggiungo un leggero bordo/ombra per separare gli elementi
-            >
-              {/* Immagine a Sinistra */}
+          {products?.data?.products?.map((product: IProduct) => {
+            const imagePath = product?.images[0] || "";
+            // Rimuoviamo il '/' iniziale se presente per non duplicarlo con l'API_URL
+            const cleanImagePath = imagePath.startsWith("/")
+              ? imagePath.substring(1)
+              : imagePath;
+
+            return (
+              <div
+                key={product?._id}
+                className="bg-white flex gap-3 p-3 border border-gray-200 rounded-lg shadow-sm">
+                {/* Dettagli Prodotto */}
+                <div className="w-[120px] h-[120px] overflow-hidden rounded-md flex-shrink-0">
+                  <Image
+                    // Ora funziona grazie a next.config.js
+                    src={`${API_URL}/${cleanImagePath}`}
+                    className="w-full h-full object-cover"
+                    width={300}
+                    height={300}
+                    alt={product?.name}
+                    style={{
+                      backgroundImage: `url('/sell/${product?.product_type}-sq.jpeg')`,
+                    }}
+                  />
+                </div>
+
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg text-[#101010] font-semibold">
+                      {product?.name}
+                    </h3>
+                    <p className="text-sm font-normal text-gray-700">
+                      {product?.memory} | {getProductQuantity(product?._id)}{" "}
+                      Controller
+                    </p>
+                    <p className="text-sm font-normal text-gray-700 mb-2">
+                      {product?.condition}
+                    </p>
+                  </div>
+                  <div className="flex items-end justify-between mt-auto">
+                    <div className="flex flex-col">
+                      <p className="text-sm text-gray-600">Prezzo:</p>
+                      <h4 className="text-2xl font-bold text-[#FD9A34]">
+                        &euro;
+                        {(
+                          product?.offer_price *
+                          getProductQuantity(product?._id)
+                        ).toFixed(2)}
+                      </h4>
+                    </div>
+
+                    <div
+                      onClick={() => removeItem(product?._id)}
+                      className="flex items-center text-red-600 text-sm font-medium cursor-pointer hover:text-red-800 transition-colors">
+                      Rimuovi
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="ml-1">
+                        <path
+                          d="M6 18L18 6M6 6L18 18"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* SEZIONE: VALUTAZIONE TRADE-IN */}
+        {/* ------------------------------------------------------------------ */}
+        {tradeInDetails && (
+          <div className=" mb-5 space-y-4">
+            <h2 className="text-2xl font-semibold text-[#101010]">
+              Valutazione trade-in
+            </h2>
+            <p className="text-base text-[#101010]">1 articolo in Trade-in</p>
+
+            {/* Dettagli Articolo Trade-in */}
+            <div className="bg-white flex gap-3 p-3 border border-gray-200 rounded-lg shadow-sm">
               <div className="w-[120px] h-[120px] overflow-hidden rounded-md flex-shrink-0">
                 <Image
-                  src={`${API_URL}/${product?.images[0]}`}
+                  src="/placeholder.png"
                   className="w-full h-full object-cover"
                   width={300}
                   height={300}
-                  alt={product?.name}
-                  style={{
-                    backgroundImage: `url('/sell/${product?.product_type}-sq.jpeg')`,
-                  }}
+                  alt={tradeInDetails.name}
                 />
               </div>
-
-              {/* Dettagli del Prodotto e Prezzo a Destra */}
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   <h3 className="text-lg text-[#101010] font-semibold">
-                    {product?.name}
+                    {tradeInDetails.name}
                   </h3>
-                  {/* Dettagli più specifici (adattati dallo screenshot) */}
                   <p className="text-sm font-normal text-gray-700">
-                    {product?.memory} | {getProductQuantity(product?._id)}{" "}
+                    {tradeInDetails.memory} | {tradeInDetails.controllerCount}{" "}
                     Controller
                   </p>
                   <p className="text-sm font-normal text-gray-700 mb-2">
-                    {product?.condition}
+                    {tradeInDetails.condition}
+                  </p>
+                  <p className="text-sm font-normal text-gray-700">
+                    **Difetti tecnici:** {tradeInDetails.technicalIssues}
+                  </p>
+                  <p className="text-sm font-normal text-gray-700">
+                    **Accessori originali:**{" "}
+                    {tradeInDetails.originalAccessories}
                   </p>
                 </div>
-
-                {/* Prezzo e Rimuovi (in linea) */}
-                <div className="flex items-end justify-between mt-auto">
-                  <div className="flex flex-col">
-                    <p className="text-sm text-gray-600">Prezzo:</p>
-                    <h4 className="text-2xl font-bold text-[#FD9A34]">
-                      &euro;
-                      {product?.offer_price * getProductQuantity(product?._id)}
-                    </h4>
-                  </div>
-
-                  {/* Pulsante Rimuovi (stile minimalista dello screenshot) */}
-                  <div
-                    onClick={() => removeItem(product?._id)}
-                    className="flex items-center text-red-600 text-sm font-medium cursor-pointer hover:text-red-800 transition-colors">
-                    Rimuovi
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="ml-1">
-                      <path
-                        d="M6 18L18 6M6 6L18 18"
-                        stroke="currentColor" // Usa il colore del testo (red-600)
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
+                <div className="flex items-end justify-end mt-auto">
+                  <span
+                    onClick={removeTradeIn}
+                    className="text-red-600 text-sm font-medium cursor-pointer hover:text-red-800 transition-colors">
+                    Rimuovi X
+                  </span>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-        {/* Box Totale */}
-        <div className="mx-5 mt-5 mb-5 bg-[#FDFDFD] flex items-center justify-between rounded-lg p-4">
+
+            {/* Offerta Trade-in */}
+            <div className="bg-[#FDFDFD] flex items-center justify-between rounded-lg p-4 shadow-sm border border-gray-200">
+              <h3 className="text-lg font-semibold text-[#404040]">
+                La nostra offerta
+              </h3>
+              <h2 className="text-[32px] font-bold text-[#FD9A34]">
+                &euro;{tradeInDetails.tradeInValue.toFixed(2)}
+              </h2>
+            </div>
+
+            {/* Totale dopo permuta */}
+            <div className="bg-[#FDFDFD] flex flex-col items-end rounded-lg p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between w-full">
+                <h3 className="text-lg font-semibold text-[#404040]">Totale</h3>
+                <span className="text-xl font-medium text-gray-500 line-through">
+                  &euro;{tradeInDetails.originalPrice.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between w-full mt-1">
+                <p className="text-base text-[#404040]">
+                  Prezzo dopo la permuta
+                </p>
+                <h2 className="text-[40px] font-semibold text-[#FD9A34]">
+                  &euro;{totalAfterTradeIn.toFixed(2)}
+                </h2>
+              </div>
+            </div>
+
+            {/* Testo informativo Trade-in */}
+            <div className="text-base text-gray-700 space-y-3 pt-3">
+              <p>
+                Dopo aver inserito nel carrello il trade-in ti manderemo, nel
+                giro di 1-3 giorni lavorativi, tutto l'occorrente per spedirci
+                il tuo dispositivo gratuitamente!
+              </p>
+              <p>
+                Quando riceveremo il tuo dispositivo ci riserveremo 2-3 giorni
+                lavorativi per testarlo, dopodiché ti invieremo l'importo
+                stimato.
+              </p>
+            </div>
+          </div>
+        )}
+        {/* FINE TRADE-IN */}
+
+        {/* Box Totale del Carrello */}
+        <div className=" mt-5 mb-5 bg-[#FDFDFD] flex items-center justify-between rounded-lg p-4">
           <h3 className="text-2xl font-semibold text-[#404040]">Total</h3>
           <h2 className="text-[40px] font-semibold text-[#FD9A34]">
-            ${subtotal}
+            &euro;{totalAfterTradeIn.toFixed(2)}
           </h2>
         </div>
 
@@ -307,135 +633,176 @@ export default function CartPage() {
         <div className="w-full pb-9">
           <div className="mx-5 border-b-2 border-b-[#B8B8B8] space-x-4 pt-3 mb-6">
             <h2 className="text-[#101010] text-xl font-semibold pb-3">
-              You might also be interested in
+              Potrebbe anche interessarti
             </h2>
           </div>
 
           <div className="mx-5 grid grid-cols-2 gap-x-2 gap-y-4">
-            {products?.data?.variants?.map((product: IProduct) => (
-              <div key={product?._id} className="bg-[#FDFDFD] rounded-lg">
-                <div className="p-2">
-                  <Image
-                    src={`${API_URL}/${product?.images[0]}`}
-                    className="w-full h-full"
-                    width={600}
-                    height={600}
-                    alt=""
-                    style={{
-                      backgroundImage: `url('/sell/${product?.product_type}-sq.jpeg')`,
-                    }}
-                  />
-                </div>
+            {products?.data?.variants?.map((product: IProduct) => {
+              const imagePath = product?.images[0] || "";
+              const cleanImagePath = imagePath.startsWith("/")
+                ? imagePath.substring(1)
+                : imagePath;
 
-                <div className="relative flex items-center justify-between border-b border-b-[#B5B5B5] p-2">
-                  {/* Add to cart */}
-                  <div className="absolute bg-[#FDFDFD] rounded-md -top-6 right-2 shadow-md">
-                    <button
-                      onClick={() => handleAddToCart(product?._id)}
-                      className="px-3 py-1 flex items-center gap-1">
-                      Add
-                      <svg
-                        width="19"
-                        height="17"
-                        viewBox="0 0 19 17"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          d="M5.5 14.5C5.77614 14.5 6 14.2761 6 14C6 13.7239 5.77614 13.5 5.5 13.5C5.22386 13.5 5 13.7239 5 14C5 14.2761 5.22386 14.5 5.5 14.5Z"
-                          stroke="#404040"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M12.5 14.5C12.7761 14.5 13 14.2761 13 14C13 13.7239 12.7761 13.5 12.5 13.5C12.2239 13.5 12 13.7239 12 14C12 14.2761 12.2239 14.5 12.5 14.5Z"
-                          stroke="#404040"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M1.5 3.5H3.5L5 12H13"
-                          stroke="#404040"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M5 10H12.795C12.8528 10 12.9089 9.98004 12.9536 9.9434C12.9983 9.90676 13.029 9.85576 13.0403 9.79906L13.9403 5.29906C13.9476 5.26278 13.9467 5.22533 13.9377 5.18943C13.9288 5.15352 13.9119 5.12006 13.8885 5.09145C13.865 5.06284 13.8355 5.03979 13.802 5.02398C13.7686 5.00816 13.732 4.99997 13.695 5H4"
-                          stroke="#404040"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <rect
-                          x="10"
-                          y="1"
-                          width="8"
-                          height="8"
-                          rx="4"
-                          fill="#FDFDFD"
-                        />
-                        <path
-                          d="M14 9C16.2 9 18 7.2 18 5C18 2.8 16.2 1 14 1C11.8 1 10 2.8 10 5C10 7.2 11.8 9 14 9Z"
-                          stroke="#FD9A34"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M12.667 5H15.3337"
-                          stroke="#FD9A34"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M14 6.33366V3.66699"
-                          stroke="#FD9A34"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
+              // Verifica la quantità nel carrello per il controllo (+/-)
+              const currentQuantity = getProductQuantity(product._id);
+
+              return (
+                <div key={product?._id} className="bg-[#FDFDFD] rounded-lg">
+                  {/* Immagine */}
+                  <div className="p-2">
+                    <Image
+                      src={`${API_URL}/${cleanImagePath}`}
+                      className="w-full h-full"
+                      width={600}
+                      height={600}
+                      alt={product.name}
+                      style={{
+                        backgroundImage: `url('/sell/${product?.product_type}-sq.jpeg')`,
+                      }}
+                    />
                   </div>
 
-                  <div>
-                    <h2 className="text-[#101010] font-medium">
-                      {product?.name}
-                    </h2>
-                    <p className="text-[#101010] text-[10px] ">
-                      {product?.brand} | {product?.condition}
-                    </p>
+                  {/* Dettagli Varianti e Controlli (LAYOUT CORRETTO E COMPLETO) */}
+                  <div className="p-2 pt-0">
+                    {/* Blocco Nome e Prezzo */}
+                    <div className="border-b border-b-[#B5B5B5] pb-2 mb-2">
+                      <div className="text-base font-semibold">
+                        {product.brand}{" "}
+                        <span className="font-normal block text-sm">
+                          {product.name}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-start w-full mt-2">
+                        <span className="text-xl font-bold text-[#101010]">
+                          &euro;{product.offer_price.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Logica Aggiungi/Controlli Quantità */}
+                    {currentQuantity === 0 ? (
+                      // Bottone Add to Cart per il primo inserimento (Larghezza completa)
+                      <button
+                        onClick={() => handleAddToCart(product._id)}
+                        className="w-full bg-[#FD9A34] text-white p-2 rounded-lg text-base font-semibold">
+                        Aggiungi
+                      </button>
+                    ) : (
+                      // Controlli Quantità (Mostrati se il prodotto è già nel carrello)
+                      <div className="flex items-center justify-between gap-2.5">
+                        <button
+                          onClick={() => decreaseQuantity(product._id)}
+                          className="bg-[#FD9A34] text-white p-2 rounded-lg">
+                          <Minus size={16} />
+                        </button>
+                        <span className="p-2 border text-lg font-medium flex-1 text-center">
+                          {currentQuantity}
+                        </span>
+                        <button
+                          onClick={() => increaseQuantity(product._id)}
+                          className="bg-[#FD9A34] text-white p-2 rounded-lg">
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  <h2 className="text-base text-[#101010] ">
-                    ${product?.offer_price}
-                  </h2>
                 </div>
-
-                <div className="flex items-center justify-between gap-2.5 py-4 mx-4">
-                  <button
-                    onClick={() => decreaseQuantity(product?._id)}
-                    className="bg-[#FD9A34] h-6 w-[32px] text-[#FDFDFD] rounded-md">
-                    -
-                  </button>
-                  <p className="h-6 w-6 text-xs text-[#000000] border border-[#B5B5B5] rounded-md flex items-center justify-center">
-                    {getProductQuantity(product?._id)}
-                  </p>
-                  <button
-                    onClick={() => increaseQuantity(product?._id)}
-                    className="bg-[#FD9A34] h-6 w-[32px] text-[#FDFDFD] rounded-md">
-                    +
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
+        {/* /* FINE 'You might also be interested in' */}
+        {/* ------------------------------------------------------------------ */}
+        {/* SEZIONE: Vantaggi e Pagamento a Rate */}
+        {/* ------------------------------------------------------------------ */}
+        <div className="mt-5 px-5 py-4 rounded-lg shadow-sm">
+          {/* Blocco Pagamento a Rate */}
+          <div className="p-4 mb-4 rounded-lg shadow-md bg-[#FDFDFD] border border-gray-300">
+            <div className="flex items-center justify-center space-x-2">
+              <p className="text-xl font-bold text-[#101010]">
+                Paga in 3 rate con
+              </p>
+              <Image
+                src="/payments/paypal2.svg"
+                alt="PayPal"
+                width={75}
+                height={20}
+                className="h-5 w-auto"
+              />
+              <p className="text-xl font-bold text-[#101010]">o</p>
+              <Image
+                src="/payments/klarna.png"
+                alt="Klarna"
+                width={40}
+                height={20}
+                className="h-10 w-auto"
+              />
+            </div>
+            <p className="text-base text-center text-gray-700 mt-1">
+              senza interessi né costi aggiuntivi.
+            </p>
+          </div>
+
+          {/* Blocchetto Vantaggi (Icone) */}
+          <div className="bg-[#FDFDFD] p-4 rounded-lg shadow-md space-y-4">
+            <div className="flex items-center space-x-3">
+              <ShieldCheck className="h-6 w-6 text-gray-600 flex-shrink-0" />
+              <p className="text-lg text-[#101010] font-medium">
+                Riconfezionato -{" "}
+                <span className="font-bold">12 Mesi di garanzia.</span>
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Truck className="h-6 w-6 text-gray-600 flex-shrink-0" />
+              <p className="text-lg text-[#101010] font-medium">
+                <span className="font-bold">Spedizione Veloce e Gratuita.</span>
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <RefreshCw className="h-6 w-6 text-gray-600 flex-shrink-0" />
+              <p className="text-lg text-[#101010] font-medium">
+                Hai cambiato idea?{" "}
+                <span className="font-bold">Il reso è gratuito.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* FINE Vantaggi e Pagamento a Rate */}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
+        {/* ------------------------------------------------------------------ */}
+        <div className="px-5 pb-8 mt-6 border-t border-b border-gray-200">
+          {ACCORDION_ITEMS.map((item) => (
+            <AccordionItem
+              key={item.title}
+              title={item.title}
+              content={item.content}
+            />
+          ))}
+        </div>
+        {/* FINE ACCORDION */}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* SEZIONE DELLE RECENSIONI */}
+        {/* ------------------------------------------------------------------ */}
+        <div className="mt-6 ">
+          <CartReviewGrid
+            productName={product.product?.name || "Console Locker"}
+          />
+        </div>
+        {/* FINE SEZIONE RECENSIONI */}
 
         {/* Footer di Pagamento */}
-        <div className="p-5 bg-[#FDFDFD]">
-          <button
-            onClick={handleCheckout}
-            className="w-full text-[#FDFDFD] font-semibold bg-[#FD9A34] h-14 rounded-lg">
-            PAY NOW
-          </button>
-        </div>
+      </div>
+      <div className="w-full p-5 bg-[#FDFDFD]">
+        <button
+          onClick={handleCheckout}
+          className="w-full text-[#FDFDFD] font-semibold bg-[#FD9A34] h-14 rounded-lg">
+          PAY NOW
+        </button>
       </div>
     </div>
   );

@@ -254,107 +254,102 @@ export default function CheckoutForm() {
   return (
     <>
       {/* Desktop */}
-      <div className='hidden md:block min-h-screen bg-[#F2F5F7] py-8'>
+      <div className="hidden md:block min-h-screen bg-[#F2F5F7] py-8">
         <Container>
-          <div className='grid grid-cols-1 lg:grid-cols-3 gap-8 py-12'>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-12">
             {/* Main Form */}
-            <form onSubmit={handleSubmit} className='lg:col-span-2 space-y-8'>
+            <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-8">
               {/* Personal Information */}
-              <div className='bg-white p-6 rounded-lg shadow-sm'>
-                <h2 className='text-[32px] font-semibold text-[#101010] mb-6'>
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h2 className="text-[32px] font-semibold text-[#101010] mb-6">
                   {t("personalInformation")}
                 </h2>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label
-                      htmlFor='firstName'
-                      className='block text-lg font-medium text-[#101010] mb-1'
-                    >
+                      htmlFor="firstName"
+                      className="block text-lg font-medium text-[#101010] mb-1">
                       {t("firstName")}
-                      <span className='text-red-500 font-semibold'>*</span>
+                      <span className="text-red-500 font-semibold">*</span>
                     </label>
                     <input
-                      type='text'
-                      id='firstName'
-                      name='firstName'
+                      type="text"
+                      id="firstName"
+                      name="firstName"
                       required
-                      className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                       value={formData.firstName}
                       onChange={handleInputChange}
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor='lastName'
-                      className='block text-lg font-medium text-[#101010] mb-1'
-                    >
+                      htmlFor="lastName"
+                      className="block text-lg font-medium text-[#101010] mb-1">
                       {t("lastName")}
-                      <span className='text-red-500 font-semibold'>*</span>
+                      <span className="text-red-500 font-semibold">*</span>
                     </label>
                     <input
-                      type='text'
-                      id='lastName'
-                      name='lastName'
+                      type="text"
+                      id="lastName"
+                      name="lastName"
                       required
-                      className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                       value={formData.lastName}
                       onChange={handleInputChange}
                     />
                   </div>
                 </div>
 
-                <div className='mb-4'>
+                <div className="mb-4">
                   <label
-                    htmlFor='email'
-                    className='block text-lg font-medium text-[#101010] mb-1'
-                  >
-                    {t("email")}{" "}
-                    <span className='text-red-500 font-semibold'>*</span>
+                    htmlFor="email"
+                    className="block text-lg font-medium text-[#101010] mb-1">
+                    {t("email")}
+                    <span className="text-red-500 font-semibold">*</span>
                   </label>
                   <input
-                    type='email'
-                    id='email'
-                    name='email'
+                    type="email"
+                    id="email"
+                    name="email"
                     required
-                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     value={formData.email}
                     onChange={handleInputChange}
                   />
                 </div>
 
-                <div className='mb-4'>
+                <div className="mb-4">
                   <label
-                    htmlFor='phone'
-                    className='block text-lg font-medium text-[#101010] mb-1'
-                  >
+                    htmlFor="phone"
+                    className="block text-lg font-medium text-[#101010] mb-1">
                     {t("phone")}
                   </label>
-                  <div className='flex'>
-                    <div className='w-20 mr-2'>
+                  <div className="flex">
+                    <div className="w-20 mr-2">
                       <button
-                        type='button'
-                        className='w-full px-3 py-2 border border-gray-300 rounded-md flex items-center justify-between'
-                      >
+                        type="button"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md flex items-center justify-between">
                         <Image
-                          src='/germany.png'
-                          alt='German flag'
+                          src="/germany.png"
+                          alt="German flag"
                           width={20}
                           height={15}
-                          className='mr-1'
+                          className="mr-1"
                         />
                         +42
                       </button>
                     </div>
                     <input
-                      type='tel'
-                      id='phone'
-                      name='phone'
-                      className='flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                       value={formData.phone}
                       onChange={handleInputChange}
                     />
                   </div>
-                  <p className='text-sm text-[#6B6B6B] mt-1'>
+                  <p className="text-sm text-[#6B6B6B] mt-1">
                     Please provide a mobile phone number in case we need to
                     contact you about your order.
                   </p>
@@ -362,79 +357,75 @@ export default function CheckoutForm() {
               </div>
 
               {/* Address */}
-              <div className='bg-white p-6 rounded-lg shadow-sm'>
-                <h2 className='text-xl font-semibold mb-6'>{t("Address")}</h2>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h2 className="text-xl font-semibold mb-6">{t("Address")}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label
-                      htmlFor='zipCode'
-                      className='block text-lg font-medium text-[#101010] mb-1'
-                    >
-                      Postcode{" "}
-                      <span className='text-red-500 font-semibold'>*</span>
+                      htmlFor="zipCode"
+                      className="block text-lg font-medium text-[#101010] mb-1">
+                      Postcode
+                      <span className="text-red-500 font-semibold">*</span>
                     </label>
                     <input
-                      type='text'
-                      id='zipCode'
-                      name='zipCode'
+                      type="text"
+                      id="zipCode"
+                      name="zipCode"
                       required
-                      className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                       value={formData.zipCode}
                       onChange={handleInputChange}
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor='city'
-                      className='block text-lg font-medium text-[#101010] mb-1'
-                    >
+                      htmlFor="city"
+                      className="block text-lg font-medium text-[#101010] mb-1">
                       {t("townCity")}
-                      <span className='text-red-500 font-semibold'>*</span>
+                      <span className="text-red-500 font-semibold">*</span>
                     </label>
                     <input
-                      type='text'
-                      id='city'
-                      name='city'
+                      type="text"
+                      id="city"
+                      name="city"
                       required
-                      className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                       value={formData.city}
                       onChange={handleInputChange}
                     />
                   </div>
                 </div>
 
-                <div className='mb-4'>
+                <div className="mb-4">
                   <label
-                    htmlFor='address
-'
-                    className='block text-lg font-medium text-[#101010] mb-1'
-                  >
-                    {t("streetName")}{" "}
-                    <span className='text-red-500 font-semibold'>*</span>
+                    htmlFor="address
+"
+                    className="block text-lg font-medium text-[#101010] mb-1">
+                    {t("streetName")}
+                    <span className="text-red-500 font-semibold">*</span>
                   </label>
                   <input
-                    type='text'
-                    id='address'
-                    name='address'
+                    type="text"
+                    id="address"
+                    name="address"
                     required
-                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     value={formData.address}
                     onChange={handleInputChange}
                   />
                 </div>
 
-                <div className='mb-4'>
+                <div className="mb-4">
                   <label
-                    htmlFor='apartment'
-                    className='block text-lg font-medium text-[#101010] mb-1'
-                  >
+                    htmlFor="apartment"
+                    className="block text-lg font-medium text-[#101010] mb-1">
                     {t("appointment")}
                   </label>
                   <input
-                    type='text'
-                    id='apartment'
-                    name='apartment'
-                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                    type="text"
+                    id="apartment"
+                    name="apartment"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     value={formData.apartment}
                     onChange={handleInputChange}
                   />
@@ -442,75 +433,71 @@ export default function CheckoutForm() {
 
                 <div>
                   <label
-                    htmlFor='country'
-                    className='block text-lg font-medium text-[#101010] mb-1'
-                  >
-                    Country{" "}
-                    <span className='text-red-500 font-semibold'>*</span>
+                    htmlFor="country"
+                    className="block text-lg font-medium text-[#101010] mb-1">
+                    Country
+                    <span className="text-red-500 font-semibold">*</span>
                   </label>
                   <select
-                    id='country'
-                    name='country'
+                    id="country"
+                    name="country"
                     required
-                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     value={formData.country}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
                         country: e.target.value,
                       }))
-                    }
-                  >
-                    <option value=''>Select a country</option>
-                    <option value='Italy'>Italy</option>
-                    <option value='Germany'>Germany</option>
-                    <option value='France'>France</option>
-                    <option value='United Kingdom'>United Kingdom</option>
+                    }>
+                    <option value="">Select a country</option>
+                    <option value="Italy">Italy</option>
+                    <option value="Germany">Germany</option>
+                    <option value="France">France</option>
+                    <option value="United Kingdom">United Kingdom</option>
                   </select>
                 </div>
               </div>
 
               {/* Payment */}
-              <div className='bg-white p-6 rounded-lg shadow-sm'>
-                <h2 className='text-xl font-semibold mb-6'>{t("payment")}</h2>
-                <div className='space-y-4 mb-8'>
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h2 className="text-xl font-semibold mb-6">{t("payment")}</h2>
+                <div className="space-y-4 mb-8">
                   <label
                     onClick={() => handlePayment("bank")}
-                    className='flex items-center justify-between p-4 border rounded-md'
-                  >
-                    <div className='flex items-center'>
+                    className="flex items-center justify-between p-4 border rounded-md">
+                    <div className="flex items-center">
                       <input
-                        type='radio'
-                        name='paymentMethod'
-                        value='bank'
+                        type="radio"
+                        name="paymentMethod"
+                        value="bank"
                         checked={paymentMethod === "bank"}
                         onChange={handleInputChange}
-                        className='h-4 w-4 text-blue-600 focus:ring-blue-500'
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className='ml-2 text-[#101010] text-xl font-semibold'>
+                      <span className="ml-2 text-[#101010] text-xl font-semibold">
                         Bank transfer (IBAN)
                       </span>
                     </div>
-                    <span className='font-medium'>${priceEstimate}</span>
+                    <span className="font-medium">${priceEstimate}</span>
                   </label>
 
                   {/* {formData.paymentMethod === "paypal" && ( */}
                   {paymentMethod === "bank" && (
-                    <div className='pl-6'>
+                    <div className="pl-6">
                       <label
-                        htmlFor='iban'
-                        className='block text-lg font-medium text-[#101010] mb-1'
-                      >
-                        Bank details, IBAN{" "}
-                        <span className='text-red-500 font-semibold'>*</span>
+                        htmlFor="iban"
+                        className="block text-lg font-medium text-[#101010] mb-1">
+                        Bank details, IBAN
+                        <span className="text-red-500 font-semibold">*</span>
                       </label>
                       <input
-                        type='text'
-                        id='iban'
-                        name='iban'
+                        type="text"
+                        id="iban"
+                        name="iban"
                         required
-                        className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
-                        placeholder='Example: FI14 1009 3000 1234 58'
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        placeholder="Example: FI14 1009 3000 1234 58"
                         value={formData.iban}
                         onChange={handleInputChange}
                       />
@@ -520,44 +507,42 @@ export default function CheckoutForm() {
 
                 {/* Paypal Payment */}
                 <div>
-                  <div className='space-y-4'>
+                  <div className="space-y-4">
                     <label
                       onClick={() => handlePayment("paypal")}
-                      className='flex items-center justify-between p-4 border rounded-md'
-                    >
-                      <div className='flex items-center'>
+                      className="flex items-center justify-between p-4 border rounded-md">
+                      <div className="flex items-center">
                         <input
-                          type='radio'
-                          name='paymentMethod'
-                          value='bank'
+                          type="radio"
+                          name="paymentMethod"
+                          value="bank"
                           checked={paymentMethod === "paypal"}
                           onChange={handleInputChange}
-                          className='h-4 w-4 text-blue-600 focus:ring-blue-500'
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className='ml-2 text-[#101010] text-xl font-semibold'>
+                        <span className="ml-2 text-[#101010] text-xl font-semibold">
                           PayPal: $5,00 minus $0,10 fees
                         </span>
                       </div>
-                      <span className='font-medium'>${priceEstimate}</span>
+                      <span className="font-medium">${priceEstimate}</span>
                     </label>
 
                     {/* {formData.paymentMethod === "paypal" && ( */}
                     {paymentMethod === "paypal" && (
-                      <div className='pl-6'>
+                      <div className="pl-6">
                         <label
-                          htmlFor='iban'
-                          className='block text-lg font-medium text-[#101010] mb-1'
-                        >
+                          htmlFor="iban"
+                          className="block text-lg font-medium text-[#101010] mb-1">
                           Email
-                          <span className='text-red-500 font-semibold'>*</span>
+                          <span className="text-red-500 font-semibold">*</span>
                         </label>
                         <input
-                          type='text'
-                          id='iban'
-                          name='iban'
+                          type="text"
+                          id="iban"
+                          name="iban"
                           required
-                          className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
-                          placeholder='Enter your paypal email'
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="Enter your paypal email"
                           value={formData.paypalEmail}
                           onChange={(e) =>
                             setFormData((prev) => ({
@@ -572,27 +557,24 @@ export default function CheckoutForm() {
                 </div>
 
                 {/* Terms and Submit */}
-                <div className='space-y-4 mt-6'>
+                <div className="space-y-4 mt-6">
                   <button
-                    type='submit'
-                    className='w-full bg-black text-white py-3 px-4 rounded-md hover:bg-gray-800 transition-colors'
-                  >
+                    type="submit"
+                    className="w-full bg-black text-white py-3 px-4 rounded-md hover:bg-gray-800 transition-colors">
                     {t("send")}
                   </button>
 
-                  <p className='ml-2 text-base text-[#2B2B2B]'>
-                    {t("next5TermsOfSale1")}{" "}
+                  <p className="ml-2 text-base text-[#2B2B2B]">
+                    {t("next5TermsOfSale1")}
                     <Link
-                      href='#'
-                      className='text-[#222C9B] font-medium hover:underline'
-                    >
+                      href="#"
+                      className="text-[#222C9B] font-medium hover:underline">
                       {t("next5TermsOfSale2")}
-                    </Link>{" "}
-                    {t("next5TermsOfSale3")}{" "}
+                    </Link>
+                    {t("next5TermsOfSale3")}
                     <Link
-                      href='#'
-                      className='text-[#222C9B] font-medium hover:underline'
-                    >
+                      href="#"
+                      className="text-[#222C9B] font-medium hover:underline">
                       {t("next5TermsOfSale4")}
                     </Link>
                   </p>
@@ -601,32 +583,32 @@ export default function CheckoutForm() {
             </form>
 
             {/* Summary */}
-            <div className='lg:col-span-1'>
-              <div className='bg-white p-6 rounded-lg shadow-sm sticky top-4'>
-                <h2 className='text-2xl text-[#101010] font-semibold mb-6'>
+            <div className="lg:col-span-1">
+              <div className="bg-white p-6 rounded-lg shadow-sm sticky top-4">
+                <h2 className="text-2xl text-[#101010] font-semibold mb-6">
                   {t("summary")}
                 </h2>
-                <div className='flex items-start space-x-4'>
-                  <div className='w-20 h-20 relative flex-shrink-0'>
+                <div className="flex items-start space-x-4">
+                  <div className="w-20 h-20 relative flex-shrink-0">
                     <Image
                       src={`${API_URL}${
                         product?.data?.image ? product?.data?.image : ""
                       }`}
                       // src={''}
-                      alt='Playstation 4'
+                      alt="Playstation 4"
                       width={300}
                       height={300}
-                      className='w-[127px] h-[120px] object-contain'
+                      className="w-[127px] h-[120px] object-contain"
                     />
                   </div>
                   <div>
-                    <h3 className='text-xl text-[#101010] font-medium mb-6'>
+                    <h3 className="text-xl text-[#101010] font-medium mb-6">
                       {product?.data?.name}
                     </h3>
-                    <p className='text-lg text-[#2B2B2B]'>
+                    <p className="text-lg text-[#2B2B2B]">
                       {t("yourPriceEstimate")}
                     </p>
-                    <p className='text-2xl text-[#101010] font-semibold'>
+                    <p className="text-2xl text-[#101010] font-semibold">
                       ${priceEstimate}
                     </p>
                   </div>
@@ -638,159 +620,157 @@ export default function CheckoutForm() {
       </div>
 
       {/* only for mobile */}
-      <div className='md:hidden'>
+      <div className="md:hidden">
         <div className="z-20 min-h-screen relative bg-[url('/sell/back_sell.png')] bg-cover bg-center overflow-hidden">
           <form onSubmit={handleSubmit}>
             {/* Personal Information */}
-            <div className='p-5'>
-              <h2 className='text-lg font-semibold text-[#FFFFFF]'>
+            <div className="p-5">
+              <h2 className="text-lg font-semibold text-[#FFFFFF]">
                 {t("personalInformation")}
               </h2>
 
-              <div className='w-full mx-auto h-1 border-b-2 border-b-[#FDFDFD] mb-5' />
+              <div className="w-full mx-auto h-1 border-b-2 border-b-[#FDFDFD] mb-5" />
 
-              <div className='bg-[#FDFDFD] p-3 rounded-lg space-y-3 mb-5'>
-                <div className='flex items-center gap-6'>
-                  <div className='flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]'>
+              <div className="bg-[#FDFDFD] p-3 rounded-lg space-y-3 mb-5">
+                <div className="flex items-center gap-6">
+                  <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
                     <label
-                      htmlFor='firstName'
-                      className='text-sm leading-[21px]'
-                    >
-                      {t("firstName")} <span className='text-red-500'>*</span>
+                      htmlFor="firstName"
+                      className="text-sm leading-[21px]">
+                      {t("firstName")} <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type='text'
-                      name='firstName'
+                      type="text"
+                      name="firstName"
                       onChange={handleInputChange}
                       value={formData.firstName}
-                      id='firstName'
-                      className='px-2 py-2 h-10 border-2 rounded-md placeholder:text-sm'
-                      placeholder='First Name'
+                      id="firstName"
+                      className="px-2 py-2 h-10 border-2 rounded-md placeholder:text-sm"
+                      placeholder="First Name"
                       required
                     />
                   </div>
 
-                  <div className='flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]'>
+                  <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
                     <label
-                      htmlFor='lastName'
-                      className='text-sm leading-[21px]'
-                    >
-                      {t("lastName")} <span className='text-red-500'>*</span>
+                      htmlFor="lastName"
+                      className="text-sm leading-[21px]">
+                      {t("lastName")} <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type='text'
-                      name='lastName'
+                      type="text"
+                      name="lastName"
                       onChange={handleInputChange}
                       value={formData.lastName}
-                      id='lastName'
-                      className='px-2 py-2 border-2 rounded-md placeholder:text-sm'
-                      placeholder='Last Name'
+                      id="lastName"
+                      className="px-2 py-2 border-2 rounded-md placeholder:text-sm"
+                      placeholder="Last Name"
                       required
                     />
                   </div>
                 </div>
 
-                <div className='flex flex-col gap-1 w-full'>
-                  <label htmlFor='email' className='text-sm leading-[21px]'>
-                    {t("email")} <span className='text-red-500'>*</span>
+                <div className="flex flex-col gap-1 w-full">
+                  <label htmlFor="email" className="text-sm leading-[21px]">
+                    {t("email")} <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type='email'
-                    name='email'
+                    type="email"
+                    name="email"
                     onChange={handleInputChange}
                     value={formData.email}
-                    id='email'
-                    className='px-2 py-2 border-2 rounded-md placeholder:text-sm'
-                    placeholder='Enter email'
+                    id="email"
+                    className="px-2 py-2 border-2 rounded-md placeholder:text-sm"
+                    placeholder="Enter email"
                     required
                   />
                 </div>
 
-                <div className='flex flex-col gap-1 w-full'>
-                  <label htmlFor='phone' className='text-sm leading-[21px]'>
-                    {t("phoneNumber")} <span className='text-red-500'>*</span>
+                <div className="flex flex-col gap-1 w-full">
+                  <label htmlFor="phone" className="text-sm leading-[21px]">
+                    {t("phoneNumber")} <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type='tel'
-                    name='phone'
+                    type="tel"
+                    name="phone"
                     onChange={handleInputChange}
                     value={formData.phone}
-                    id='phone'
-                    className='px-2 py-2 border-2 rounded-md placeholder:text-sm'
-                    placeholder='Phone Number'
+                    id="phone"
+                    className="px-2 py-2 border-2 rounded-md placeholder:text-sm"
+                    placeholder="Phone Number"
                     required
                   />
                 </div>
               </div>
 
               {/* Address */}
-              <h2 className='text-lg font-semibold text-[#FFFFFF]'>
+              <h2 className="text-lg font-semibold text-[#FFFFFF]">
                 {t("address")}
               </h2>
 
-              <div className='w-full mx-auto h-1 border-b-2 border-b-[#FDFDFD] mb-5' />
-              <div className='bg-[#FDFDFD] p-3 rounded-lg space-y-3 mb-5'>
-                <div className='flex items-center gap-6'>
-                  <div className='flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]'>
-                    <label htmlFor='city' className='text-sm leading-[21px]'>
-                      {t("city")} <span className='text-red-500'>*</span>
+              <div className="w-full mx-auto h-1 border-b-2 border-b-[#FDFDFD] mb-5" />
+              <div className="bg-[#FDFDFD] p-3 rounded-lg space-y-3 mb-5">
+                <div className="flex items-center gap-6">
+                  <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
+                    <label htmlFor="city" className="text-sm leading-[21px]">
+                      {t("city")} <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type='text'
-                      name='city'
+                      type="text"
+                      name="city"
                       onChange={handleInputChange}
                       value={formData.city}
-                      id='city'
-                      className='px-2 py-2 border-2 rounded-md placeholder:text-sm'
-                      placeholder='City'
+                      id="city"
+                      className="px-2 py-2 border-2 rounded-md placeholder:text-sm"
+                      placeholder="City"
                       required
                     />
                   </div>
 
-                  <div className='flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]'>
-                    <label htmlFor='zipCode' className='text-sm leading-[21px]'>
-                      {t("postalCode")} <span className='text-red-500'>*</span>
+                  <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
+                    <label htmlFor="zipCode" className="text-sm leading-[21px]">
+                      {t("postalCode")} <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type='text'
-                      name='zipCode'
+                      type="text"
+                      name="zipCode"
                       onChange={handleInputChange}
                       value={formData.zipCode}
-                      id='zipCode'
-                      className='px-2 py-2 border-2 rounded-md placeholder:text-sm'
-                      placeholder='Postal Code'
+                      id="zipCode"
+                      className="px-2 py-2 border-2 rounded-md placeholder:text-sm"
+                      placeholder="Postal Code"
                       required
                     />
                   </div>
                 </div>
 
-                <div className='flex flex-col gap-1 w-full'>
-                  <label htmlFor='address' className='text-sm leading-[21px]'>
-                    {t("shippingAddress")}{" "}
-                    <span className='text-red-500'>*</span>
+                <div className="flex flex-col gap-1 w-full">
+                  <label htmlFor="address" className="text-sm leading-[21px]">
+                    {t("shippingAddress")}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type='text'
-                    id='address'
-                    name='address'
+                    type="text"
+                    id="address"
+                    name="address"
                     required
                     onChange={handleInputChange}
                     value={formData.address}
-                    className='px-2 py-2 border-2 rounded-md placeholder:text-sm'
-                    placeholder='Shipping Address'
+                    className="px-2 py-2 border-2 rounded-md placeholder:text-sm"
+                    placeholder="Shipping Address"
                   />
                 </div>
 
-                <div className='flex flex-col gap-1 w-full'>
-                  <label htmlFor='apartment' className='text-sm leading-[21px]'>
+                <div className="flex flex-col gap-1 w-full">
+                  <label htmlFor="apartment" className="text-sm leading-[21px]">
                     {t("apartmentStaircase")}
                   </label>
                   <input
-                    type='text'
-                    id='apartment'
-                    name='apartment'
-                    className='px-2 py-2 border-2 rounded-md placeholder:text-sm'
-                    placeholder='Apartment, Staircase, etc.'
+                    type="text"
+                    id="apartment"
+                    name="apartment"
+                    className="px-2 py-2 border-2 rounded-md placeholder:text-sm"
+                    placeholder="Apartment, Staircase, etc."
                     value={formData.apartment}
                     onChange={handleInputChange}
                   />
@@ -798,46 +778,44 @@ export default function CheckoutForm() {
 
                 <div>
                   <label
-                    htmlFor='country'
-                    className='block text-sm font-medium text-[#101010] mb-1'
-                  >
-                    Country{" "}
-                    <span className='text-red-500 font-semibold'>*</span>
+                    htmlFor="country"
+                    className="block text-sm font-medium text-[#101010] mb-1">
+                    Country
+                    <span className="text-red-500 font-semibold">*</span>
                   </label>
                   <select
-                    id='country'
-                    name='country'
+                    id="country"
+                    name="country"
                     required
-                    aria-required='true'
-                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
+                    aria-required="true"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     value={formData.country}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
                         country: e.target.value,
                       }))
-                    }
-                  >
+                    }>
                     {!formData.country && (
-                      <option value='' disabled>
+                      <option value="" disabled>
                         Select a country
                       </option>
                     )}
-                    <option value='Italy'>Italy</option>
-                    <option value='Germany'>Germany</option>
-                    <option value='France'>France</option>
-                    <option value='United Kingdom'>United Kingdom</option>
+                    <option value="Italy">Italy</option>
+                    <option value="Germany">Germany</option>
+                    <option value="France">France</option>
+                    <option value="United Kingdom">United Kingdom</option>
                   </select>
                 </div>
               </div>
 
               {/* Payment */}
-              <h2 className='text-lg font-semibold text-[#FFFFFF]'>
+              <h2 className="text-lg font-semibold text-[#FFFFFF]">
                 {t("payment")}
               </h2>
-              <div className='w-full mx-auto h-1 border-b-2 border-b-[#FDFDFD] mb-5' />
+              <div className="w-full mx-auto h-1 border-b-2 border-b-[#FDFDFD] mb-5" />
 
-              <div className='bg-[#FDFDFD] p-5 rounded-lg space-y-3 mb-5'>
+              <div className="bg-[#FDFDFD] p-5 rounded-lg space-y-3 mb-5">
                 <div
                   onClick={() => {
                     setPaymentMethod("bank");
@@ -845,11 +823,10 @@ export default function CheckoutForm() {
                   }}
                   className={`h-14 ${
                     paymentMethod === "bank" ? "border-2 border-[#FF9934]" : ""
-                  } flex items-center justify-between gap-3 rounded-lg p-4`}
-                >
-                  <div className='flex items-center gap-3'>
+                  } flex items-center justify-between gap-3 rounded-lg p-4`}>
+                  <div className="flex items-center gap-3">
                     <input
-                      type='radio'
+                      type="radio"
                       checked={paymentMethod === "bank"}
                       onChange={() => {
                         setPaymentMethod("bank");
@@ -858,32 +835,31 @@ export default function CheckoutForm() {
                           paymentMethod: "bank",
                         }));
                       }}
-                      className='w-6 h-6'
+                      className="w-6 h-6"
                     />
-                    <h2 className='text-xs font-medium text-[#101010]'>
+                    <h2 className="text-xs font-medium text-[#101010]">
                       {t("bankTransfer")}
                     </h2>
                   </div>
-                  <h3 className='text-sm font-medium text-[#101010]'>
+                  <h3 className="text-sm font-medium text-[#101010]">
                     ${priceEstimate}
                   </h3>
                 </div>
 
                 {paymentMethod === "bank" && (
-                  <div className='pl-6'>
+                  <div className="pl-6">
                     <label
-                      htmlFor='iban'
-                      className='block text-sm font-medium text-[#101010] mb-1'
-                    >
-                      IBAN <span className='text-red-500 font-semibold'>*</span>
+                      htmlFor="iban"
+                      className="block text-sm font-medium text-[#101010] mb-1">
+                      IBAN <span className="text-red-500 font-semibold">*</span>
                     </label>
                     <input
-                      type='text'
-                      id='iban'
-                      name='iban'
+                      type="text"
+                      id="iban"
+                      name="iban"
                       required={paymentMethod === "bank"}
-                      className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
-                      placeholder='Example: FI14 1009 3000 1234 58'
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Example: FI14 1009 3000 1234 58"
                       value={formData.iban}
                       onChange={handleInputChange}
                     />
@@ -902,11 +878,10 @@ export default function CheckoutForm() {
                     paymentMethod === "paypal"
                       ? "border-2 border-[#FF9934]"
                       : ""
-                  } flex items-center justify-between gap-3 rounded-lg p-4`}
-                >
-                  <div className='flex items-center gap-3'>
+                  } flex items-center justify-between gap-3 rounded-lg p-4`}>
+                  <div className="flex items-center gap-3">
                     <input
-                      type='radio'
+                      type="radio"
                       checked={paymentMethod === "paypal"}
                       onChange={() => {
                         setPaymentMethod("paypal");
@@ -915,33 +890,32 @@ export default function CheckoutForm() {
                           paymentMethod: "paypal",
                         }));
                       }}
-                      className='w-6 h-6'
+                      className="w-6 h-6"
                     />
-                    <h2 className='text-xs font-medium text-[#101010]'>
+                    <h2 className="text-xs font-medium text-[#101010]">
                       {t("payPalFees")}
                     </h2>
                   </div>
-                  <h3 className='text-sm font-medium text-[#101010]'>
+                  <h3 className="text-sm font-medium text-[#101010]">
                     ${priceEstimate}
                   </h3>
                 </div>
 
                 {paymentMethod === "paypal" && (
-                  <div className='pl-6'>
+                  <div className="pl-6">
                     <label
-                      htmlFor='paypalEmail'
-                      className='block text-sm font-medium text-[#101010] mb-1'
-                    >
-                      PayPal Email{" "}
-                      <span className='text-red-500 font-semibold'>*</span>
+                      htmlFor="paypalEmail"
+                      className="block text-sm font-medium text-[#101010] mb-1">
+                      PayPal Email
+                      <span className="text-red-500 font-semibold">*</span>
                     </label>
                     <input
-                      type='email'
-                      id='paypalEmail'
-                      name='paypalEmail'
+                      type="email"
+                      id="paypalEmail"
+                      name="paypalEmail"
                       required={paymentMethod === "paypal"}
-                      className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
-                      placeholder='Enter your PayPal email'
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Enter your PayPal email"
                       value={formData.paypalEmail}
                       onChange={handleInputChange}
                     />
@@ -951,11 +925,10 @@ export default function CheckoutForm() {
             </div>
 
             {/* Continue Button */}
-            <div className='bg-[#FDFDFD] p-6'>
+            <div className="bg-[#FDFDFD] p-6">
               <button
-                type='submit'
-                className='w-full h-14 bg-[#FF9934] rounded-lg text-[#FDFDFD] text-base font-semibold'
-              >
+                type="submit"
+                className="w-full h-14 bg-[#FF9934] rounded-lg text-[#FDFDFD] text-base font-semibold">
                 {t("continue")}
               </button>
             </div>

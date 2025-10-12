@@ -84,8 +84,7 @@ const MobileProductDetails = () => {
           <h2
             className={
               "bg-[#FDFDFD] py-4 px-8 rounded-lg shadow-md text-[#101010] text-xl font-semibold text-center whitespace-nowrap"
-            }
-          >
+            }>
             {t("consoleHeaderTitle")}
           </h2>
           <hr className="flex-1 border-b-2 border-gray-300" />
@@ -102,8 +101,7 @@ const MobileProductDetails = () => {
                 mod.title === modal
                   ? "bg-[#64B95E] text-[#FDFDFD]"
                   : "bg-[#DDDEE3]"
-              } border border-[#919191] text-center text-2xl font-semibold leading-[36px]`}
-            >
+              } border border-[#919191] text-center text-2xl font-semibold leading-[36px]`}>
               {mod?.title}
             </div>
           ))}
@@ -117,8 +115,7 @@ const MobileProductDetails = () => {
           <h2
             className={
               "bg-[#FDFDFD] py-4 px-8 rounded-lg shadow-md text-[#101010] text-lg font-medium text-center whitespace-wrap"
-            }
-          >
+            }>
             {t("storageCapacity")}
           </h2>
           <hr className="flex-1 border-b-2 border-gray-300" />
@@ -133,8 +130,7 @@ const MobileProductDetails = () => {
                 storg.title === storage
                   ? "bg-[#64B95E] text-[#FDFDFD]"
                   : "bg-[#DDDEE3]"
-              } text-xl text-[#101010] font-semibold w-[98px] h-[106px] text-center flex items-center justify-center rounded-md`}
-            >
+              } text-xl text-[#101010] font-semibold w-[98px] h-[106px] text-center flex items-center justify-center rounded-md`}>
               {storg.title}
             </div>
           ))}
@@ -148,8 +144,7 @@ const MobileProductDetails = () => {
           <h2
             className={
               "bg-[#FDFDFD] py-4 px-8 rounded-lg shadow-md text-[#101010] text-lg font-medium text-center whitespace-wrap"
-            }
-          >
+            }>
             {t("consoleCondition")}
           </h2>
           <hr className="flex-1 border-b-2 border-gray-300" />
@@ -164,8 +159,7 @@ const MobileProductDetails = () => {
                 cond.title === condition
                   ? "bg-[#64B95E] text-[#FDFDFD]"
                   : "bg-[#DDDEE3]"
-              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}
-            >
+              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}>
               {cond.title}
             </div>
           ))}
@@ -187,7 +181,6 @@ const MobileProductDetails = () => {
             fresh item, responsiveness to commands is instantaneous, and it
           </p>
           <p className="border-b-2 border-dashed">
-            {" "}
             does not have any overheating issues.
           </p>
         </div>
@@ -200,8 +193,7 @@ const MobileProductDetails = () => {
           <h2
             className={
               "bg-[#FDFDFD] py-4 px-[14px] rounded-lg shadow-md text-[#101010] text-lg font-medium text-center whitespace-wrap"
-            }
-          >
+            }>
             {t("consoleFullyFunctional")}
           </h2>
           <hr className="flex-1 border-b-2 border-gray-300" />
@@ -216,8 +208,7 @@ const MobileProductDetails = () => {
                 func.title === functional
                   ? "bg-[#64B95E] text-[#FDFDFD]"
                   : "bg-[#DDDEE3]"
-              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}
-            >
+              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}>
               {func.title}
             </div>
           ))}
@@ -231,8 +222,7 @@ const MobileProductDetails = () => {
           <h2
             className={
               "bg-[#FDFDFD] py-4 px-[14px] rounded-lg shadow-md text-[#101010] text-lg font-medium text-center whitespace-wrap"
-            }
-          >
+            }>
             {t("consoleControllers")}
           </h2>
           <hr className="flex-1 border-b-2 border-gray-300" />
@@ -247,8 +237,7 @@ const MobileProductDetails = () => {
                 cont.title === controller
                   ? "bg-[#64B95E] text-[#FDFDFD]"
                   : "bg-[#DDDEE3]"
-              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}
-            >
+              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}>
               {cont.title}
             </div>
           ))}
@@ -262,8 +251,7 @@ const MobileProductDetails = () => {
           <h2
             className={
               "bg-[#FDFDFD] py-4 px-[14px] rounded-lg shadow-md text-[#101010] text-lg font-medium text-center whitespace-wrap"
-            }
-          >
+            }>
             {t("originalAccessories")}
           </h2>
           <hr className="flex-1 border-b-2 border-gray-300" />
@@ -278,8 +266,7 @@ const MobileProductDetails = () => {
                 access.title === accessory
                   ? "bg-[#64B95E] text-[#FDFDFD]"
                   : "bg-[#DDDEE3]"
-              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}
-            >
+              } text-xl text-[#101010] font-semibold w-[198px] h-[106px] text-center flex items-center justify-center rounded-md p-4`}>
               {access.title}
             </div>
           ))}
@@ -293,8 +280,7 @@ const MobileProductDetails = () => {
           <h2
             className={
               "bg-[#FDFDFD] py-4 px-[14px] rounded-lg shadow-md text-[#101010] text-lg font-medium text-center whitespace-wrap"
-            }
-          >
+            }>
             {t("leaveUsANote")}
           </h2>
           <hr className="flex-1 border-b-2 border-gray-300" />
@@ -314,7 +300,6 @@ const MobileProductDetails = () => {
               fresh item, responsiveness to commands is instantaneous, and it
             </p>
             <p className="border-b-2 border-dashed">
-              {" "}
               does not have any overheating issues.
             </p>
           </div>

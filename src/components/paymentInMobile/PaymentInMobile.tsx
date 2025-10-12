@@ -44,7 +44,7 @@ const PaymentInMobile = () => {
             <div className="flex items-center gap-6">
               <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
                 <label htmlFor="firstName" className="text-sm leading-[21px]">
-                  {t("firstName")} <span className="text-red-500">*</span>{" "}
+                  {t("firstName")} <span className="text-red-500">*</span>
                 </label>
 
                 <input
@@ -62,7 +62,7 @@ const PaymentInMobile = () => {
 
               <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
                 <label htmlFor="lastName" className="text-sm leading-[21px]">
-                  {t("lastName")} <span className="text-red-500">*</span>{" "}
+                  {t("lastName")} <span className="text-red-500">*</span>
                 </label>
 
                 <input
@@ -80,7 +80,7 @@ const PaymentInMobile = () => {
 
             <div className="flex flex-col gap-1 w-full">
               <label htmlFor="email" className="text-sm leading-[21px]">
-                {t("email")} <span className="text-red-500">*</span>{" "}
+                {t("email")} <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -97,7 +97,7 @@ const PaymentInMobile = () => {
 
             <div className="flex flex-col gap-1 w-full">
               <label htmlFor="phone" className="text-sm leading-[21px]">
-                {t("phoneNumber")} <span className="text-red-500">*</span>{" "}
+                {t("phoneNumber")} <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -122,7 +122,7 @@ const PaymentInMobile = () => {
             <div className="flex items-center gap-6">
               <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
                 <label htmlFor="city" className="text-sm leading-[21px]">
-                  {t("city")} <span className="text-red-500">*</span>{" "}
+                  {t("city")} <span className="text-red-500">*</span>
                 </label>
 
                 <input
@@ -139,7 +139,7 @@ const PaymentInMobile = () => {
 
               <div className="flex-1 flex flex-col gap-1 w-[45%] max-w-[50%]">
                 <label htmlFor="postalCode" className="text-sm leading-[21px]">
-                  {t("postalCode")} <span className="text-red-500">*</span>{" "}
+                  {t("postalCode")} <span className="text-red-500">*</span>
                 </label>
 
                 <input
@@ -158,9 +158,8 @@ const PaymentInMobile = () => {
             <div className="flex flex-col gap-1 w-full">
               <label
                 htmlFor="shippingAddress"
-                className="text-sm leading-[21px]"
-              >
-                {t("shippingAddress")} <span className="text-red-500">*</span>{" "}
+                className="text-sm leading-[21px]">
+                {t("shippingAddress")} <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -206,8 +205,7 @@ const PaymentInMobile = () => {
                 paymentMethod === "bankTransfer"
                   ? "border-2 border-[#FF9934]"
                   : ""
-              } flex items-center justify-between gap-3 rounded-lg p-4`}
-            >
+              } flex items-center justify-between gap-3 rounded-lg p-4`}>
               <div className="flex items-center gap-3">
                 <input
                   type="radio"
@@ -227,8 +225,7 @@ const PaymentInMobile = () => {
                 paymentMethod === "payPalFees"
                   ? "border-2 border-[#FF9934]"
                   : ""
-              } flex items-center justify-between gap-3 rounded-lg p-4`}
-            >
+              } flex items-center justify-between gap-3 rounded-lg p-4`}>
               <div className="flex items-center gap-3">
                 <input
                   type="radio"

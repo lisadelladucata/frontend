@@ -95,7 +95,7 @@ export function BlogCarousel() {
         {isError && (
           <div className="text-center py-8">
             <p className="text-red-500 text-2xl relative w-fit group mx-auto">
-              Failed to load blogs.{" "}
+              Failed to load blogs.
               <div className="inline-flex ml-2">
                 <button
                   onClick={refetch}

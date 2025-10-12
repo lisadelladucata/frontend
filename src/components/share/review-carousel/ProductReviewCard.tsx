@@ -1,8 +1,9 @@
 import React from "react";
-import { Star, Check } from "lucide-react";
-import { useMemo } from "react"; // Manteniamo useMemo
+import { Star } from "lucide-react";
+import { CheckCircleFilled } from "@ant-design/icons";
 
-// Manteniamo la tipizzazione corretta (IReview dal componente genitore)
+import { useMemo } from "react";
+
 interface IReview {
   _id: string;
   rating: number;
@@ -14,7 +15,6 @@ interface IReview {
   };
 }
 
-// Funzione per determinare la classe di colore in base all'iniziale
 const getInitialColorClass = (char: string) => {
   const upperChar = char.toUpperCase();
 
@@ -29,23 +29,14 @@ const getInitialColorClass = (char: string) => {
 };
 
 const ProductReviewCard: React.FC<{ review: IReview }> = ({ review }) => {
-  // CORREZIONE 1: Il codice JavaScript deve stare all'interno del corpo del componente,
-  // prima del 'return'.
-  // CORREZIONE 2: Utilizza 'review.customer.name' per accedere al nome.
-
   const name = review.customer.name;
   const initial = name ? name.charAt(0).toUpperCase() : "?";
 
-  // CORREZIONE 3: Uso corretto di useMemo e della variabile 'initial'.
   const initialStyleClass = useMemo(
     () => getInitialColorClass(initial),
     [initial]
   );
 
-  // L'avatar mostrato nell'ultima immagine è BIANCO con testo verde,
-  // quindi commentiamo temporaneamente l'uso della logica dinamica,
-  // ma la rendiamo disponibile in caso tu voglia usarla.
-  // const avatarClass = initialStyleClass;
   const avatarClass = initialStyleClass;
 
   return (
@@ -71,7 +62,7 @@ const ProductReviewCard: React.FC<{ review: IReview }> = ({ review }) => {
 
             {/* Acquisto Verificato */}
             <div className="flex items-center text-sm text-green-200 mt-1">
-              <Check className="h-4 w-4 mr-1 text-green-200" />
+              <CheckCircleFilled className="h-4 w-4 mr-1 text-green-200" />
               <span>Acquisto verificato</span>
             </div>
           </div>

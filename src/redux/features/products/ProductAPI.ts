@@ -152,7 +152,6 @@ export const {
   useGetAllProductsForHomeQuery,
   useGetAllProductsQuery,
   useGetSingleProductQuery,
-  useCreateProductMutation,
   useGetEstimateProductPriceMutation,
   useFindSlugProductQuery,
   useGetProductAttrQuery,

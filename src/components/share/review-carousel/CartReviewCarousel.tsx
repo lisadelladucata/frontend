@@ -2,7 +2,7 @@
 
 import { DownOutlined } from "@ant-design/icons";
 import { useState } from "react";
-import ProductReviewCard from "./ProductReviewCard";
+import CartReviewCard from "./CartReviewCard";
 import Container from "@/components/common/Container";
 import { useGetReviewsQuery } from "@/redux/features/review/ReviewAPI";
 import { Spin } from "antd";
@@ -16,25 +16,23 @@ interface IReview {
   updatedAt: string;
   _id: string;
 }
-export default function ProductReviewGrid({
+export default function CartReviewGrid({
   productName,
 }: {
   productName: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const filterKey = productName || "";
   const INITIAL_LIMIT = 2;
+
   const {
     data: reviews,
     isFetching,
     isError,
   } = useGetReviewsQuery({
-    productName: filterKey,
     page: 1,
     limit: 9,
   });
-
   const allReviews = reviews?.data?.reviews || [];
   const displayedReviews = isExpanded
     ? allReviews
@@ -64,26 +62,30 @@ export default function ProductReviewGrid({
         /* ======================================================= */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
           {displayedReviews.map((review: IReview) => (
-            <ProductReviewCard review={review} key={review._id} />
+            <CartReviewCard review={review} key={review._id} />
           ))}
         </div>
       )}
 
       {/* Bottone "Visualizza/Nascondi recensioni" */}
       {totalAvailableReviews > INITIAL_LIMIT && (
-        <div className="mt-8 flex justify-center">
+        // Lo sfondo del bottone è stato modificato per assomigliare di più allo screenshot (Rosso scuro)
+        <div className="mt-8 flex justify-center bg-white mb-8">
           <button
             onClick={handleToggleReviews}
-            className="w-full max-w-sm flex items-center justify-center gap-2 p-3 
-                         text-white text-base font-semibold 
-                        rounded-lg shadow-md  border-transparent
-                        transition-colors">
+            // CAMBIATO: Aumento la larghezza massima a 'max-w-lg' o 'max-w-xl'
+            // Aumento il padding a 'p-4' e la dimensione del testo a 'text-lg'
+            className="w-full max-w-lg flex items-center justify-center gap-2 p-4 
+                   text-lg font-semibold 
+                 rounded-lg shadow-xl border-transparent
+                transition-colors">
             {isExpanded
               ? `Nascondi recensioni`
               : `Visualizza tutte le ${totalAvailableReviews} recensioni`}
 
             <DownOutlined
-              className={`text-white text-sm ${
+              className={`text-xl ${
+                // Aumento la dimensione dell'icona
                 isExpanded ? "rotate-180" : ""
               } transition-transform`}
             />
