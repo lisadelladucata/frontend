@@ -1,5 +1,5 @@
 import { BlogCarousel } from "@/components/home/blogs/BlogCarousel";
-import BundleSelector from "@/components/home/bundle/BundleSelector";
+// import BundleSelector from "@/components/home/bundle/BundleSelector";
 import GreenStory from "@/components/home/greenStory/NewSection";
 import HeroBanner from "@/components/home/header/HeroBanner";
 import ConsoleSelector from "@/components/home/showcase/ConsoleSector";
@@ -12,7 +12,7 @@ export default function Home() {
       <HeroBanner />
       <ConsoleSelector />
       {/* <ImageSlider /> */}
-      <BundleSelector />
+      {/* <BundleSelector /> */}
       <ReviewCarousel productName={""} />
       <GreenStory />
       <BlogCarousel />

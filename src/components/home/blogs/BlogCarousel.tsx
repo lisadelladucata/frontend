@@ -96,23 +96,23 @@ export function BlogCarousel() {
           <div className="text-center py-8">
             <p className="text-red-500 text-2xl relative w-fit group mx-auto">
               Failed to load blogs.
-              <div className="inline-flex ml-2">
-                <button
-                  onClick={refetch}
-                  className="underline cursor-pointer font-bold text-black group-hover:scale-110 transition">
-                  Retry
-                </button>
-                <span className="relative flex size-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
-                  <span className="relative inline-flex size-3 rounded-full bg-sky-500"></span>
-                </span>
-              </div>
-              <img
-                src="/397056891_11541951.png"
-                alt="mark arrow"
-                className="absolute -top-16 right-10 w-20 rotate-[-80deg] select-none"
-              />
             </p>
+            <div className="inline-flex ml-2">
+              <button
+                onClick={refetch}
+                className="underline cursor-pointer font-bold text-black group-hover:scale-110 transition">
+                Retry
+              </button>
+              <span className="relative flex size-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
+                <span className="relative inline-flex size-3 rounded-full bg-sky-500"></span>
+              </span>
+            </div>
+            <img
+              src="/397056891_11541951.png"
+              alt="mark arrow"
+              className="absolute -top-16 right-10 w-20 rotate-[-80deg] select-none"
+            />
           </div>
         )}
 

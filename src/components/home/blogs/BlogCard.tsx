@@ -116,7 +116,7 @@ export function BlogCard({
               alt={title || "Blog image"}
               src={`${API_URL}${image}`}
               fill
-              className="object-cover object-center transition-transform duration-300 hover:scale-105"
+              className=" object-center transition-transform duration-300 hover:scale-105"
             />
           </div>
         }

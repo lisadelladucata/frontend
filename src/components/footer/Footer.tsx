@@ -14,25 +14,27 @@ export function ConsoleFooter() {
     <footer className="bg-[#101010]">
       <Container>
         {/* Newsletter Section */}
-        <div className="flex flex-col md:flex-row gap-8 justify-between items-center mb-20 pt-12">
-          <div className="w-full flex items-center">
-            <div className="relative flex items-center md:gap-4">
-              <Image
-                src="/footer-img.png"
-                alt="Xbox Series X"
-                width={150}
-                height={150}
-                style={{ objectFit: "contain" }}
-                className="hidden lg:inline-block absolute -top-28 left-0"
-              />
-              <div className="ml-0 lg:ml-52">
-                <h2 className="text-left text-[#FDFDFD] text-2xl md:text-[40px] font-semibold">
-                  Iscriviti alla nostra Newsletter
-                </h2>
-              </div>
-            </div>
+        <div className="flex flex-col gap-6 mb-20 pt-12">
+          {/* 1. Titolo (Allineato a Sinistra) */}
+          <h2 className="text-left text-[#FDFDFD] text-2xl md:text-[40px] font-semibold">
+            Iscriviti alla nostra Newsletter
+          </h2>
+
+          {/* 2. Immagine della Console (Allineata a Sinistra) */}
+          <div className="w-auto">
+            <Image
+              src="/footer-img.png"
+              alt="Xbox Series X"
+              width={200} // Aumentato un po' la dimensione per renderla più importante
+              height={200}
+              style={{ objectFit: "contain" }}
+              className="mb-4" // Margine inferiore per separare dal form
+            />
           </div>
-          <section className="my-10">
+
+          {/* 3. Contenitore per il Form */}
+          <section className="my-2 max-w-sm">
+            {/* Imposto un max-width per rendere il form più compatto */}
             <NewsletterForm />
           </section>
         </div>
