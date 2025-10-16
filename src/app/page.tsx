@@ -13,7 +13,7 @@ export default function Home() {
       <ConsoleSelector />
       {/* <ImageSlider /> */}
       {/* <BundleSelector /> */}
-      <ReviewCarousel productName={""} />
+      <ReviewCarousel productName={""} theme={"gray"} />
       <GreenStory />
       <BlogCarousel />
     </div>

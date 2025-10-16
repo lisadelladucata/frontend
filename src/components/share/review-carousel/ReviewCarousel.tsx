@@ -18,11 +18,17 @@ interface IReview {
   _id: string;
 }
 
+type CardTheme = "gray" | "white" | "playstation" | "xbox" | "nintendo";
+
+interface ReviewCarouselProps {
+  productName: string;
+  theme: CardTheme;
+}
+
 export default function ReviewCarousel({
   productName,
-}: {
-  productName: string;
-}) {
+  theme,
+}: ReviewCarouselProps) {
   // STATO CHIAVE: Controlla se mostrare solo le prime 4 o tutte le caricate (max 9)
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -54,7 +60,7 @@ export default function ReviewCarousel({
   };
 
   return (
-    <div className={`mb-10 lg:py-16 bg-transparent`}>
+    <div className="lg:py-16 bg-transparent">
       <Container>
         {/* Gestione stati omessa */}
 
@@ -72,7 +78,7 @@ export default function ReviewCarousel({
           // CONTENITORE GRIGLIA
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
             {displayedReviews.map((review: IReview) => (
-              <ReviewCard key={review._id} {...review} />
+              <ReviewCard key={review._id} {...review} theme={theme} />
             ))}
           </div>
         )}

@@ -6,9 +6,6 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import {
-  Truck,
-  RefreshCw,
-  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
@@ -25,13 +22,21 @@ import Loading from "@/app/loading"; // Assicurati che il path sia corretto
 import ProductCard from "@/components/buy/ProductCard"; // Importazione default (come nel tuo file fornito)
 import ProductSidebar from "@/components/buy/ProductSidebar";
 import MobileHeader from "@/components/buy/MobileHeader";
-import CartReviewGrid from "@/components/share/review-carousel/CartReviewCarousel";
+import ReviewCarousel from "@/components/share/review-carousel/ReviewCarousel";
+import { useDispatch } from "react-redux";
+import { modifiedCart } from "@/redux/features/cart/TrackCartItem";
+import { useRouter } from "next/navigation"; // Aggiungi questo se vuoi reindirizzare
+import TrustSection from "@/components/buy/TrustSection";
+import Accordion from "@/components/accordion/Accordion";
 
 const ProductPage: React.FC = () => {
   // === STATI PRINCIPALI ===
   const [view, setView] = useState<"grid" | "list">("grid");
   const [filterView, setFilterView] = useState(false); // Controlla l'overlay filtri mobile
   const { t } = useTranslation(); // === STATI FILTRI ===
+
+  const dispatch = useDispatch();
+  const router = useRouter();
 
   const [searchProduct, setSearchProduct] = useState<string>("");
   const [brandSearch, setBrandSearch] = useState<string>("");
@@ -265,6 +270,47 @@ const ProductPage: React.FC = () => {
   // FINE DEI COMPONENTI ACCORDION
   // *******************************************************************
 
+  const handleAddToCart = (product: any) => {
+    // 1. Notifica Redux dell'azione
+    dispatch(modifiedCart({}));
+
+    const existingCart = JSON.parse(localStorage?.getItem("cart") || "[]");
+
+    const newProduct = {
+      productId: product._id,
+      quantity: 1,
+      name: product.name,
+      price: product.offer_price,
+      // Aggiungi altri campi essenziali per il carrello (es. immagine, slug se necessario)
+    };
+
+    // 2. Controllo duplicati e aggiornamento
+    const isDuplicate = existingCart.some(
+      (item: any) => item.productId === newProduct.productId
+    );
+
+    if (isDuplicate) {
+      const updatedCart = existingCart.map((item: any) => {
+        if (item.productId === newProduct.productId) {
+          return {
+            ...item,
+            quantity: item.quantity + 1,
+          };
+        }
+        return item;
+      });
+      localStorage?.setItem("cart", JSON.stringify(updatedCart));
+      console.info(
+        `Aggiunta un'altra unità di ${newProduct.name} al carrello.`
+      );
+    } else {
+      console.log(`${newProduct.name} aggiunto al carrello!`);
+      existingCart.push(newProduct);
+      localStorage?.setItem("cart", JSON.stringify(existingCart));
+    }
+    router.push("/cart");
+  };
+
   /*------------------------------------------------------------------------*/
   return (
     <div className="relative bg-[#F2F5F7] py-8">
@@ -370,6 +416,7 @@ const ProductPage: React.FC = () => {
                     key={product._id}
                     product={product}
                     layout="grid"
+                    handleAddToCart={handleAddToCart}
                   />
                 ))}
               </div>
@@ -383,6 +430,7 @@ const ProductPage: React.FC = () => {
                     key={product._id}
                     product={product}
                     layout="list"
+                    handleAddToCart={handleAddToCart}
                   />
                 ))}
               </div>
@@ -429,77 +477,28 @@ const ProductPage: React.FC = () => {
         </div>
         {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
         <div className="px-5 pb-8 mt-6">
-          {ACCORDION_ITEMS.map((item) => (
-            <AccordionItem
-              key={item.title}
-              title={item.title}
-              content={item.content}
-            />
-          ))}
+          <Accordion
+            productName={products.product?.name || ""}
+            productType={""}
+            productSpecs={products.product?.technical_specs}
+            productDescription={
+              products.product?.long_description ||
+              products.product?.description ||
+              ""
+            }
+            modelDes={products.product?.modelDes}
+            controllerDes={products.product?.controllerDes}
+            memoryDes={products.product?.memoryDes}
+            conditionDes={products.product?.conditionDes}
+          />
         </div>
-
         {/* ------------------------------------------------------------------ */}
         {/* NUOVA SEZIONE: Vantaggi e Pagamento a Rate */}
         {/* ------------------------------------------------------------------ */}
-        <div className="px-5 py-4">
-          {/* 1. Blocchetto Pagamento a Rate */}
-          <div className={"p-4 mb-4 rounded-lg shadow-md bg-[#FDFDFD] border"}>
-            <div className="flex items-center justify-center space-x-2">
-              <p className="text-xl font-bold text-[#101010]">
-                Paga in 3 rate con
-              </p>
-              <Image
-                src="/payments/paypal2.svg" // Assicurati che il percorso sia corretto
-                alt="PayPal"
-                width={75} // Riduci la larghezza per renderla più simile a Klarna
-                height={20}
-                className="h-5 w-auto"
-              />
-              <p className="text-xl font-bold text-[#101010]">o</p>
-              <Image
-                src="/payments/klarna.png" // Assicurati che il percorso sia corretto
-                alt="Klarna"
-                width={40} // Riduci la larghezza per proporzione
-                height={20}
-                className="h-10 w-auto"
-              />
-            </div>
-            <p className="text-base text-center text-gray-700 mt-1">
-              senza interessi ne costi aggiuntivi.
-            </p>
-          </div>
-
-          {/* 2. Blocchetto Vantaggi (Garanzia, Spedizione, Reso) */}
-          <div className="bg-[#FDFDFD] p-4 rounded-lg shadow-md space-y-4">
-            {/* Vantaggio 1: Garanzia */}
-            <div className="flex items-center space-x-3">
-              <ShieldCheck className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                Riconfezionato -
-                <span className="font-bold">12 Mesi di garanzia.</span>
-              </p>
-            </div>
-
-            {/* Vantaggio 2: Spedizione */}
-            <div className="flex items-center space-x-3">
-              <Truck className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                <span className="font-bold">Spedizione Veloce e Gratuita.</span>
-              </p>
-            </div>
-
-            {/* Vantaggio 3: Reso */}
-            <div className="flex items-center space-x-3">
-              <RefreshCw className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                Hai cambiato idea?
-                <span className="font-bold">Il reso è gratuito.</span>
-              </p>
-            </div>
-          </div>
+        <TrustSection className="px-5 py-4" innerBlockBgClass="bg-[#FDFDFD]" />{" "}
+        <div className="mt-6">
+          <ReviewCarousel productName={products.name} theme="white" />
         </div>
-
-        <CartReviewGrid productName={products.name} />
       </Container>
     </div>
   );

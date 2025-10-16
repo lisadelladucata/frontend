@@ -1,9 +1,7 @@
-// src/components/product/ProductCard.tsx (Definitivo)
-
 import React from "react";
 import { ShoppingCart } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import Link from "next/link"; // Aggiunto per coerenza se la card è cliccabile
+import Link from "next/link";
 
 interface ProductData {
   _id: string;
@@ -21,32 +19,36 @@ interface ProductData {
 interface ProductCardProps {
   product: ProductData;
   layout?: "list" | "grid";
+  handleAddToCart: (product: ProductData) => void;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+  handleAddToCart,
+  product,
+}) => {
   const { t } = useTranslation();
 
   const shortDesc = product.description_short?.split("|").map((d) => d.trim());
 
-  const handleAction = () => {
-    if (product.quantity) {
+  const handleAction = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (product.quantity && handleAddToCart) {
+      handleAddToCart(product);
       console.log(`Aggiunto al carrello: ${product.name}`);
-      // Logica per aggiungere al carrello
-    } else {
+    } else if (product.quantity === 0) {
       console.log(`Richiesto avviso per: ${product.name}`);
-      // Logica per avvisare l'utente
     }
   };
 
-  // Logica per generare l'URL dell'immagine con fallback
   const imageUrl =
     product.images && product.images.length > 0
       ? `${API_URL}${product.images[0]}`
       : "/placeholder-default.svg";
 
-  // Classi base per l'intera card
   const cardClasses = `
     bg-white rounded-xl shadow-md p-3 flex 
     ${product.quantity === 0 ? "opacity-100" : "opacity-70"}
@@ -108,9 +110,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 {/* Prezzo Barrato (Original Price) - Allineato all'immagine */}
                 {originalPrice && product.price! > product.offer_price && (
                   <>
-                    <p className="text-xs text-gray-500 mr-1 mt-[-2px]">
-                      nuovo
-                    </p>
                     <p className="text-sm text-gray-400 line-through">
                       {originalPrice}
                     </p>

@@ -2,16 +2,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import {
-  Check,
-  Truck,
-  RefreshCw,
-  ShieldCheck,
-  ChevronUp,
-  ChevronDown,
-  Plus,
-  Minus,
-} from "lucide-react";
+import { Check, ChevronUp, ChevronDown, Plus, Minus } from "lucide-react";
 import ConsoleModal from "@/components/modal/Modal";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleModal } from "@/redux/features/modal/modalSlice";
@@ -24,7 +15,9 @@ import Loading from "@/app/loading";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { modifiedCart } from "@/redux/features/cart/TrackCartItem";
-import ProductReviewCarousel from "@/components/share/review-carousel/ProductReviewCarousel";
+import ReviewCarousel from "@/components/share/review-carousel/ReviewCarousel";
+import TrustSection from "@/components/buy/TrustSection";
+import Accordion from "@/components/accordion/Accordion";
 
 interface ModalTradeInData {
   productName: string;
@@ -110,9 +103,31 @@ const ProductDetailsPage: React.FC = () => {
   // 4. FUNZIONI DI UTILITY E BUSINESS LOGIC
   // ===================================================================
 
+  type CardTheme = "gray" | "white" | "playstation" | "xbox" | "nintendo";
+
+  const getProductTheme = (productType: string | undefined): CardTheme => {
+    if (!productType) return "white";
+
+    const lowerType = productType.toLowerCase();
+
+    if (lowerType.includes("playstation")) {
+      return "playstation";
+    }
+    if (lowerType.includes("xbox")) {
+      return "xbox";
+    }
+    if (lowerType.includes("nintendo")) {
+      return "nintendo";
+    }
+
+    return "white";
+  };
+
   const product = singleProduct.data;
   const productType = product.product?.product_type as string;
   const basePrice = product.product?.offer_price || 0;
+
+  const productTheme = getProductTheme(productType);
 
   const baseControllerCost =
     productType === "xbox" ? 30 : productType === "playstation" ? 40 : 0;
@@ -281,234 +296,6 @@ const ProductDetailsPage: React.FC = () => {
   const tradeInValue = modalTradeInData?.productPrice || 0;
   const finalPriceAfterTrade = Math.max(0, basePrice - tradeInValue);
 
-  // All'interno di ProductDetailsPage, vicino ad ACCORDION_ITEMS
-  const FAQ_ITEMS = [
-    {
-      question: "Le console sono nuove o ricondizionate?",
-      answer:
-        "Tutte le console che vendiamo sono ricondizionate (refurbished) e certificate dal nostro team di tecnici specializzati. Garantiamo standard di qualità elevatissimi.",
-    },
-    {
-      question: "Le console ricondizionate hanno garanzia?",
-      answer:
-        "Sì. Ogni console ricondizionata è coperta da garanzia come da normativa vigente. Offriamo 12 mesi di garanzia diretta su tutti i componenti hardware.",
-    },
-    {
-      question: "Quanto dura la garanzia e cosa copre?",
-      answer:
-        "La garanzia standard dura 12 mesi e copre qualsiasi difetto hardware non dovuto a uso improprio o danni accidentali. Per i dettagli completi, consultare i Termini e Condizioni.",
-    },
-    {
-      question: "Le console includono tutti i cavi per il funzionamento?",
-      answer:
-        "Sì, ogni console include un controller, il cavo di alimentazione e il cavo HDMI necessari per iniziare subito a giocare.",
-    },
-  ];
-
-  // Contenuto dinamico per l'accordion (Descrizione Prodotto)
-  const dynamicDescriptionContent = (
-    <div className="text-[#FDFDFD] space-y-4">
-      <p className="font-bold">{product.product?.name} - Console Portatile</p>
-      <p>
-        {/* Assumiamo che qui vada la descrizione lunga (long_description) */}
-        La console è la versione compatta e leggera della celebre console
-        {product.product?.name}, pensata per il gioco esclusivamente portatile.
-        Con il suo design elegante e i comandi integrati, è perfetta per
-        divertirsi ovunque.
-      </p>
-
-      <p className="font-bold text-lg pt-2">Specifiche Tecniche</p>
-      <ul className="list-none space-y-1 text-sm">
-        {/* Mappa le specifiche se esistono */}
-        {product.product?.technical_specs?.map(
-          (spec: { label: string; value: string }, index: number) => (
-            <li key={index}>
-              <span className="font-bold">{spec.label}:</span> {spec.value}
-            </li>
-          )
-        ) || (
-          // Dati di fallback/esempio se la prop non è definita
-          <>
-            <li>
-              <span className="font-bold">Schermo:</span> Dati non disponibili.
-            </li>
-            <li>
-              <span className="font-bold">Memoria:</span> Dati non disponibili.
-            </li>
-          </>
-        )}
-      </ul>
-
-      <p className="pt-2">
-        La console {product.product?.name} è la scelta ideale per chi cerca una
-        console maneggevole, leggera e dedicata al gioco in mobilità.
-      </p>
-    </div>
-  );
-
-  // Componente per le singole domande e risposte delle FAQ
-  const FaqAccordion = () => {
-    // Stato per tenere traccia di quale domanda è aperta
-    const [openFaq, setOpenFaq] = useState(
-      "Le console ricondizionate hanno garanzia?"
-    );
-    // Ho preimpostato la seconda domanda come aperta per replicare l'immagine
-
-    // Replicazione degli stili di sfondo per l'accordion principale
-    const baseAccordionBg =
-      productType === "xbox"
-        ? "bg-[#3BAE3B]" // Verde di base per Xbox
-        : productType === "playstation"
-        ? "bg-[#1861C0]"
-        : productType === "nintendo"
-        ? "bg-[#D61D1E]"
-        : "bg-gray-700";
-
-    const activeHeaderBg =
-      productType === "xbox"
-        ? "bg-green-700" // Verde scuro per l'header attivo
-        : productType === "playstation"
-        ? "bg-blue-800"
-        : productType === "nintendo"
-        ? "bg-red-800"
-        : "bg-gray-800";
-
-    // Colore del separatore (bianco/grigio molto chiaro)
-    const separatorClass = "border-[#FDFDFD]";
-
-    return (
-      // CAMBIAMENTO: Aggiunto spazio verticale tra i blocchi FAQ (es. space-y-4)
-      <div className="space-y-4 max-w-xl">
-        {FAQ_ITEMS.map((item, index) => {
-          const isOpen = openFaq === item.question;
-          const currentBgClass = isOpen ? activeHeaderBg : baseAccordionBg;
-
-          // CAMBIAMENTO: Classi per arrotondare gli angoli in base alla posizione e allo stato
-          let roundedClasses = "";
-          if (isOpen) {
-            // Se è aperto, gli angoli in alto sono arrotondati, quelli in basso no (per far attaccare il contenuto)
-            roundedClasses = "rounded-t-lg";
-          } else {
-            // Se è chiuso, l'intero blocco è arrotondato (tutti e quattro gli angoli)
-            roundedClasses = "rounded-lg";
-          }
-
-          return (
-            // Rimosso il vecchio topBorder, ora ogni blocco è separato da space-y-4
-            <div key={item.question} className="pb-0 overflow-hidden shadow-lg">
-              {/* Aggiunto overflow-hidden e un'ombra opzionale */}
-              {/* Domanda (Header) */}
-              <div
-                className={`p-4 flex items-start justify-between cursor-pointer transition-colors duration-200 
-                          ${currentBgClass} ${roundedClasses}`}
-                onClick={() => setOpenFaq(isOpen ? "" : item.question)}>
-                <h4 className="font-medium text-base text-[#FDFDFD] pr-4">
-                  {item.question}
-                </h4>
-
-                {/* Icona Plus/Minus */}
-                {isOpen ? (
-                  <Minus className="h-6 w-6 text-[#FDFDFD] flex-shrink-0" />
-                ) : (
-                  <Plus className="h-6 w-6 text-[#FDFDFD] flex-shrink-0" />
-                )}
-              </div>
-              {/* Risposta (Contenuto) */}
-              {isOpen && (
-                <div
-                  // Arrotonda gli angoli in basso solo quando è aperto.
-                  // Manteniamo la linea di separazione interna col border-t.
-                  className={`${baseAccordionBg} p-4 pt-2 border-t ${separatorClass} rounded-b-lg`}>
-                  <p className="text-[#FDFDFD] text-sm">{item.answer}</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-  const ACCORDION_ITEMS = [
-    { title: "Descrizione Prodotto", content: dynamicDescriptionContent },
-    {
-      title: "Garanzia Console Locker",
-      content: (
-        <p className="text-[#FDFDFD]">
-          Le nostre console ricondizionate sono coperte da una garanzia completa
-          di 12 mesi contro difetti di fabbricazione. Per maggiori dettagli,
-          consulta la nostra sezione termini e condizioni.
-        </p>
-      ),
-    },
-    {
-      title: "FAQ",
-      // Ora usiamo il nuovo componente FAQ annidato
-      content: <FaqAccordion />,
-    },
-  ];
-
-  // ===================================================================
-  // 6. COMPONENTE INTERNO (Accordion Item)
-  // ===================================================================
-  const AccordionItem = ({
-    title,
-    content,
-  }: {
-    title: string;
-    content: React.ReactNode;
-  }) => {
-    const isOpen = openAccordion === title;
-
-    const activeBgClass =
-      productType === "xbox"
-        ? "bg-[#46aa48]"
-        : productType === "playstation"
-        ? "bg-[#003caa]"
-        : productType === "nintendo"
-        ? "bg-[#db2220]"
-        : "bg-gray-700";
-
-    const darkBgClass =
-      productType === "xbox"
-        ? "bg-[#72c470]" // Leggermente più scuro di #46aa48
-        : productType === "playstation"
-        ? "bg-[#012b81]" // Leggermente più scuro di #003caa
-        : productType === "nintendo"
-        ? "bg-[#a41622]"
-        : "bg-gray-800"; // Leggermente più scuro di #db2220
-
-    const separatorClass = "border-[#FDFDFD]";
-
-    return (
-      // Contenitore principale, ora con il bordo superiore dinamico
-      <div
-        className={`mb-0 ${isOpen ? "" : "pb-0"} border-t-2 ${separatorClass}`}>
-        {/* Header (Sempre colore console, testo bianco) */}
-        <div
-          // Colore condizionale: usa darkBgClass se APERTO, usa activeBgClass se CHIUSO
-          // Aggiunto border-b-2 e separatorClass (bianco)
-          className={`p-4 flex items-center justify-between cursor-pointer transition-colors duration-200 
-                            ${activeBgClass} border-b-2 ${separatorClass}`}
-          onClick={() => setOpenAccordion(isOpen ? "" : title)}>
-          {/* Testo Bianco */}
-          <h3 className="font-semibold text-lg text-[#FDFDFD]">{title}</h3>
-          {/* Icona Bianca */}
-          {isOpen ? (
-            <ChevronUp className="h-6 w-6 text-[#FDFDFD]" />
-          ) : (
-            <ChevronDown className="h-6 w-6 text-[#FDFDFD]" />
-          )}
-        </div>
-
-        {/* Contenuto (Espandibile) */}
-        {isOpen && (
-          <div className={`${isOpen ? darkBgClass : activeBgClass} p-4 pt-2`}>
-            {content}
-          </div>
-        )}
-      </div>
-    );
-  };
   return (
     <div>
       {/* --------------------- only for mobile ---------------- */}
@@ -1019,7 +806,7 @@ const ProductDetailsPage: React.FC = () => {
           </div>
         </div>
         {/* submit button */}
-        <div className="p-2.5  sticky bottom-0 left-0 right-0 z-10">
+        <div className="sticky bottom-0 z-50 p-2.5 ">
           <button
             onClick={handleAddToCart}
             className="bg-orange-500 hover:bg-orange-600 w-full text-[#FDFDFD] font-semibold h-12 rounded-lg">
@@ -1029,86 +816,27 @@ const ProductDetailsPage: React.FC = () => {
         {/* ------------------------------------------------------------------ */}
         {/* NUOVA SEZIONE: Vantaggi e Pagamento a Rate */}
         {/* ------------------------------------------------------------------ */}
-        <div className="px-5 py-4">
-          {/* 1. Blocchetto Pagamento a Rate */}
-          <div
-            className={`p-4 mb-4 rounded-lg shadow-md bg-[#FDFDFD] border 
-                      ${
-                        productType === "xbox"
-                          ? "border-[#3BAE3B]"
-                          : productType === "playstation"
-                          ? "border-[#1861C0]"
-                          : productType === "nintendo"
-                          ? "border-[#D61D1E]"
-                          : "border-gray-300"
-                      }`}>
-            <div className="flex items-center justify-center space-x-2">
-              <p className="text-xl font-bold text-[#101010]">
-                Paga in 3 rate con
-              </p>
-              <Image
-                src="/payments/paypal2.svg" // Assicurati che il percorso sia corretto
-                alt="PayPal"
-                width={75} // Riduci la larghezza per renderla più simile a Klarna
-                height={20}
-                className="h-5 w-auto"
-              />
-              <p className="text-xl font-bold text-[#101010]">o</p>
-              <Image
-                src="/payments/klarna.png" // Assicurati che il percorso sia corretto
-                alt="Klarna"
-                width={40} // Riduci la larghezza per proporzione
-                height={20}
-                className="h-10 w-auto"
-              />
-            </div>
-            <p className="text-base text-center text-gray-700 mt-1">
-              senza interessi ne costi aggiuntivi.
-            </p>
-          </div>
-
-          {/* 2. Blocchetto Vantaggi (Garanzia, Spedizione, Reso) */}
-          <div className="bg-[#FDFDFD] p-4 rounded-lg shadow-md space-y-4">
-            {/* Vantaggio 1: Garanzia */}
-            <div className="flex items-center space-x-3">
-              <ShieldCheck className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                Riconfezionato -
-                <span className="font-bold">12 Mesi di garanzia.</span>
-              </p>
-            </div>
-
-            {/* Vantaggio 2: Spedizione */}
-            <div className="flex items-center space-x-3">
-              <Truck className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                <span className="font-bold">Spedizione Veloce e Gratuita.</span>
-              </p>
-            </div>
-
-            {/* Vantaggio 3: Reso */}
-            <div className="flex items-center space-x-3">
-              <RefreshCw className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                Hai cambiato idea?
-                <span className="font-bold">Il reso è gratuito.</span>
-              </p>
-            </div>
-          </div>
-        </div>
+        <TrustSection className="px-5 py-4" innerBlockBgClass="bg-[#FDFDFD]" />{" "}
         {/* ------------------------------------------------------------------ */}
         {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
         <div className="px-5 pb-8 mt-6">
-          {ACCORDION_ITEMS.map((item) => (
-            <AccordionItem
-              key={item.title}
-              title={item.title}
-              content={item.content}
-            />
-          ))}
+          <Accordion
+            productName={product.product?.name || ""}
+            productType={productType}
+            productSpecs={product.product?.technical_specs}
+            productDescription={
+              product.product?.long_description ||
+              product.product?.description ||
+              ""
+            }
+            modelDes={product.product?.modelDes}
+            controllerDes={product.product?.controllerDes}
+            memoryDes={product.product?.memoryDes}
+            conditionDes={product.product?.conditionDes}
+          />
         </div>
         <div className="mt-6">
-          <ProductReviewCarousel productName={product.name} />
+          <ReviewCarousel productName={product.name} theme={productTheme} />
         </div>
       </div>
     </div>

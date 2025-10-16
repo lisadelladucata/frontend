@@ -13,18 +13,11 @@ import React from "react";
 
 // Assicurati che il percorso sia corretto. Ho usato 'ProductReviewGrid' come nome più probabile
 // dato il contesto dei problemi precedenti. Se usi il carosello, assicurati che la prop sia solo la stringa!
-import CartReviewGrid from "@/components/share/review-carousel/CartReviewCarousel";
+import ReviewCarousel from "@/components/share/review-carousel/ReviewCarousel";
+import Accordion from "@/components/accordion/Accordion";
 
 // IMPORTAZIONI DELLE ICONE
-import {
-  ShieldCheck,
-  Truck,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  Plus,
-  Minus,
-} from "lucide-react";
+import { ShieldCheck, Truck, RefreshCw, Plus, Minus } from "lucide-react";
 
 // Assumiamo che la struttura del prodotto sia la seguente
 interface IProduct {
@@ -132,7 +125,6 @@ export default function CartPage() {
       originalAccessories: tradeInItem.tradeIn.originalAccessories || "Sì",
       tradeInValue: tradeInItem.tradeIn.value || 0,
       imagePath: tradeInItem.tradeIn.imagePath || "/placeholder.png",
-      // Il prezzo originale dovrebbe essere la somma di tutti gli articoli, non solo il totale (gestito sotto)
       originalPrice: subtotal,
     };
   };
@@ -263,175 +255,8 @@ export default function CartPage() {
     return <Loading />;
   }
 
-  // *******************************************************************
-  // INIZIO DEI COMPONENTI ACCORDION (Stili Neutri)
-  // *******************************************************************
-
-  const FAQ_ITEMS = [
-    {
-      question: "Le console sono nuove o ricondizionate?",
-      answer:
-        "Tutte le console che vendiamo sono ricondizionate (refurbished) e certificate dal nostro team di tecnici specializzati. Garantiamo standard di qualità elevatissimi.",
-    },
-    {
-      question: "Le console ricondizionate hanno garanzia?",
-      answer:
-        "Sì. Ogni console ricondizionata è coperta da garanzia come da normativa vigente. Offriamo 12 mesi di garanzia diretta su tutti i componenti hardware.",
-    },
-    {
-      question: "Quanto dura la garanzia e cosa copre?",
-      answer:
-        "La garanzia standard dura 12 mesi e copre qualsiasi difetto hardware non dovuto a uso improprio o danni accidentali. Per i dettagli completi, consultare i Termini e Condizioni.",
-    },
-    {
-      question: "Le console includono tutti i cavi per il funzionamento?",
-      answer:
-        "Sì, ogni console include un controller, il cavo di alimentazione e il cavo HDMI necessari per iniziare subito a giocare.",
-    },
-  ];
-
-  const dynamicDescriptionContent = (
-    <div className="text-gray-800 space-y-4">
-      <p className="font-bold">{product.product?.name} - Console</p>
-      <p>
-        La console è ricondizionata e certificata dal nostro team di tecnici
-        specializzati.
-      </p>
-
-      <p className="font-bold text-lg pt-2">Specifiche Tecniche</p>
-      <ul className="list-none space-y-1 text-sm">
-        {product.product?.memory && (
-          <li>
-            <span className="font-bold">Memoria:</span> {product.product.memory}
-          </li>
-        )}
-        {product.product?.controller && (
-          <li>
-            <span className="font-bold">Controller:</span>
-            {product.product.controller}
-          </li>
-        )}
-        <li>
-          <span className="font-bold">Condizione:</span>
-          {product.product?.condition || "Ricondizionato"}
-        </li>
-      </ul>
-
-      <p className="pt-2">
-        La console {product.product?.name} è pronta per il gioco.
-      </p>
-    </div>
-  );
-
-  const FaqAccordion = () => {
-    const [openFaq, setOpenFaq] = useState(
-      "Le console ricondizionate hanno garanzia?"
-    );
-
-    return (
-      <div className="space-y-4 max-w-xl bg-[#eae9ef] ">
-        {FAQ_ITEMS.map((item) => {
-          const isOpen = openFaq === item.question;
-
-          const headerBg = isOpen ? "bg-gray-100" : "bg-white";
-          const headerText = "text-gray-900";
-          const contentBg = "bg-white";
-          const separatorClass = "border-gray-200";
-
-          return (
-            <div
-              key={item.question}
-              className="pb-0 overflow-hidden border border-gray-200 rounded-lg shadow-sm bg-">
-              <div
-                className={`p-4 flex items-start justify-between cursor-pointer transition-colors duration-200 
-                            ${headerBg} ${headerText} ${
-                  isOpen ? "font-semibold" : "font-medium"
-                }`}
-                onClick={() => setOpenFaq(isOpen ? "" : item.question)}>
-                <h4 className="text-base pr-4">{item.question}</h4>
-
-                {isOpen ? (
-                  <Minus className="h-5 w-5 text-gray-700 flex-shrink-0" />
-                ) : (
-                  <Plus className="h-5 w-5 text-gray-700 flex-shrink-0" />
-                )}
-              </div>
-
-              {isOpen && (
-                <div
-                  className={`${contentBg} p-4 pt-3 border-t ${separatorClass}`}>
-                  <p className="text-gray-700 text-sm">{item.answer}</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const ACCORDION_ITEMS = [
-    { title: "Descrizione Prodotto", content: dynamicDescriptionContent },
-    {
-      title: "Garanzia Console Locker",
-      content: (
-        <p className="text-gray-800">
-          Le nostre console ricondizionate sono coperte da una garanzia completa
-          di 12 mesi contro difetti di fabbricazione. Per maggiori dettagli,
-          consulta la nostra sezione termini e condizioni.
-        </p>
-      ),
-    },
-    {
-      title: "FAQ",
-      content: <FaqAccordion />,
-    },
-  ];
-
-  const AccordionItem = ({
-    title,
-    content,
-  }: {
-    title: string;
-    content: React.ReactNode;
-  }) => {
-    // Usiamo lo stato globale della pagina
-    const isOpen = openAccordion === title;
-
-    const headerBgClass = "bg-white";
-    const contentBgClass = "bg-[#FDFDFD]";
-    const textColorClass = "text-gray-900";
-    const separatorClass = "border-gray-200";
-
-    return (
-      <div className={`mb-0 border-b ${separatorClass}`}>
-        <div
-          className={`p-4 flex items-center justify-between cursor-pointer transition-colors duration-200 
-                      ${headerBgClass}`}
-          onClick={() => setOpenAccordion(isOpen ? "" : title)}>
-          <h3 className={`font-semibold text-lg ${textColorClass}`}>{title}</h3>
-
-          {isOpen ? (
-            <ChevronUp className="h-6 w-6 text-gray-700" />
-          ) : (
-            <ChevronDown className="h-6 w-6 text-gray-700" />
-          )}
-        </div>
-
-        {isOpen && (
-          <div className={`bg-[#eae9ef] p-4 pt-2 border-t ${separatorClass}`}>
-            {content}
-          </div>
-        )}
-      </div>
-    );
-  };
-  // *******************************************************************
-  // FINE DEI COMPONENTI ACCORDION
-  // *******************************************************************
-
   return (
-    <div className="bg-[#eae9ef] min-h-screen">
+    <div className="bg-[#eae9ef]">
       <div className="mx-5 py-4">
         {/* Intestazione del Carrello */}
         <div className="mb-5">
@@ -714,6 +539,7 @@ export default function CartPage() {
           </div>
         </div>
         {/* /* FINE 'You might also be interested in' */}
+
         {/* ------------------------------------------------------------------ */}
         {/* SEZIONE: Vantaggi e Pagamento a Rate */}
         {/* ------------------------------------------------------------------ */}
@@ -774,34 +600,36 @@ export default function CartPage() {
         {/* ------------------------------------------------------------------ */}
         {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
         {/* ------------------------------------------------------------------ */}
-        <div className="px-5 pb-8 mt-6 border-t border-b border-gray-200">
-          {ACCORDION_ITEMS.map((item) => (
-            <AccordionItem
-              key={item.title}
-              title={item.title}
-              content={item.content}
-            />
-          ))}
-        </div>
+        <Accordion
+          productName={product.product?.name || ""}
+          productType={""}
+          productSpecs={product.product?.technical_specs}
+          productDescription={
+            product.product?.long_description ||
+            product.product?.description ||
+            ""
+          }
+          modelDes={product.product?.modelDes}
+          controllerDes={product.product?.controllerDes}
+          memoryDes={product.product?.memoryDes}
+          conditionDes={product.product?.conditionDes}
+        />
         {/* FINE ACCORDION */}
 
         {/* ------------------------------------------------------------------ */}
         {/* SEZIONE DELLE RECENSIONI */}
         {/* ------------------------------------------------------------------ */}
         <div className="mt-6 ">
-          <CartReviewGrid
-            productName={product.product?.name || "Console Locker"}
-          />
+          <ReviewCarousel productName={products} theme="white" />
         </div>
         {/* FINE SEZIONE RECENSIONI */}
-
         {/* Footer di Pagamento */}
       </div>
-      <div className="w-full p-5 bg-[#FDFDFD]">
+      <div className="sticky bottom-0 z-50 w-full bg-[#FDFDFD] shadow-2xl border-t border-gray-200 p-5">
         <button
           onClick={handleCheckout}
           className="w-full text-[#FDFDFD] font-semibold bg-[#FD9A34] h-14 rounded-lg">
-          PAY NOW
+          PAGA ORA
         </button>
       </div>
     </div>
