@@ -14,6 +14,8 @@ interface ProductData {
   condition: string;
   gift_text?: string;
   product_type: string;
+  memory: string;
+  controller: number;
 }
 
 interface ProductCardProps {
@@ -81,20 +83,54 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <h3 className="text-lg font-bold text-[#101010] mb-0.5">
             {product.name}
           </h3>
+          {/* === BLOCCO CARATTERISTICHE (RIASSUNTO COMPATTO) === */}
+          {(() => {
+            const parts = [];
 
-          {/* Descrizione Breve (Split) */}
-          {shortDesc?.length && (
-            <p className="text-sm text-gray-700 leading-tight">
-              {shortDesc.join(" | ")}
-            </p>
-          )}
+            // 1. Aggiungi la Memoria, se presente (solo il valore)
+            if (product.memory) {
+              if (product.memory === "-") {
+                parts.push("");
+              }
+              if (product.memory !== "-") {
+                parts.push(product.memory);
+              }
+            }
+            // 2. Aggiungi il Controller, se presente (solo il valore, con 'Contr.' per chiarezza)
+            if (product.controller) {
+              if (product.controller === 0) {
+                parts.push("");
+              }
+              if (product.controller !== 0) {
+                parts.push(`${product.controller} Contr.`);
+              }
+              // Simula lo stile dell'immagine originale se vuoi una riga compatta
+            }
+            // 3. Aggiungi la Condizione, se presente (solo il valore)
+            if (product.condition) {
+              if (product.condition === "-") {
+                parts.push("");
+              }
+              if (product.condition !== "-") {
+                parts.push(product.condition);
+              }
+            }
 
-          {/* Condizione */}
-          <p className="text-xs text-gray-500 mb-2">
-            {product.condition}
-            {/* Aggiunto spazio per separare dal testo "nuovo" nell'immagine */}
-          </p>
+            // Se non ci sono parti da mostrare, non renderizzare nulla
+            if (parts.length === 0) {
+              return null;
+            }
 
+            // Unisci le parti con un separatore (es. ' | ')
+            const summary = parts.join(" | ");
+
+            return (
+              <p className="text-sm text-gray-700 leading-tight mb-2">
+                {summary}
+              </p>
+            );
+          })()}
+          {/* === FINE BLOCCO CARATTERISTICHE (RIASSUNTO COMPATTO) === */}{" "}
           {/* Prezzo */}
           <div className="mb-3 flex items-center">
             {/* Solo se disponibile mostriamo i prezzi, altrimenti nulla */}
@@ -140,14 +176,32 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </>
           ) : (
             <>
-              {/* === CASO NON DISPONIBILE: Avvisami === */}
-              <p className="text-sm text-center text-gray-600 font-medium mb-2">
-                {t("notAvailable")} {/* Mostra "Non disponibile" */}
+              <p className="text-sm text-red-600 font-semibold mb-2 z-20 relative">
+                Non disponibile.
               </p>
               <button
                 onClick={handleAction}
-                className="w-full bg-[#FF8C00] text-white font-semibold py-2 rounded-lg transition hover:bg-orange-600 shadow-md">
-                {t("notifyMe")} {/* Mostra "Avvisami" */}
+                // Diamo un z-index superiore al pulsante per essere cliccabile sopra l'overlay
+                className="w-full bg-[#FD9A34] text-white font-semibold h-10 rounded-lg flex items-center justify-center transition hover:bg-[#ff8a2d] shadow-md z-20 relative">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 8l7.8 5.85a1 1 0 001.2 0L21 8"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 19H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Avvisami
               </button>
             </>
           )}

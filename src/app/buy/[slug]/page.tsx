@@ -373,8 +373,35 @@ const ProductDetailsPage: React.FC = () => {
                     {product.product?.name}
                   </h2>
                   <h3 className="text-base text-[#FDFDFD]">
-                    {selectedModel} | {selectedController} | {selectedMemory} |
-                    {selectedCondition}
+                    {(() => {
+                      const mobileParts = [];
+
+                      // Modello (Presumiamo che selectedModel non sia mai vuoto/brutto, ma lo filtriamo per sicurezza)
+                      if (selectedModel && selectedModel !== "-") {
+                        mobileParts.push(selectedModel);
+                      }
+
+                      // Controller
+                      if (
+                        selectedController &&
+                        selectedController !== "0" &&
+                        selectedController !== "-"
+                      ) {
+                        mobileParts.push(`${selectedController} Contr.`);
+                      }
+
+                      // Memoria
+                      if (selectedMemory && selectedMemory !== "-") {
+                        mobileParts.push(selectedMemory);
+                      }
+
+                      // Condizione
+                      if (selectedCondition && selectedCondition !== "-") {
+                        mobileParts.push(selectedCondition);
+                      }
+
+                      return mobileParts.join(" | ");
+                    })()}
                   </h3>
                 </div>
 
