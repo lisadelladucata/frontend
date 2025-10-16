@@ -1,5 +1,3 @@
-// src/components/product/ProductCard.tsx
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 
@@ -29,9 +27,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ProductCard({ product, layout }: ProductCardProps) {
   const productUrl = `/buy/${product?.slug}`;
-  const priceValue = product.price ? Math.floor(product.price) : "N/A";
-  const formattedPrice =
-    priceValue !== "N/A" ? `€${priceValue}` : "Prezzo non disponibile";
+  const currentPrice = `€${product.offer_price.toFixed(2)}`;
   const conditionText = getConditionText(product.condition);
   return (
     <Link
@@ -54,7 +50,7 @@ export default function ProductCard({ product, layout }: ProductCardProps) {
           </h3>
 
           <p className="text-xl font-extrabold text-gray-900 whitespace-nowrap">
-            {formattedPrice}
+            {currentPrice}
           </p>
         </div>
         <p className="text-base text-gray-900 leading-tight  transition-colors line-clamp-2">

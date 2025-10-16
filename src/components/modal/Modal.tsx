@@ -1,9 +1,10 @@
+// ConsoleModal.tsx (CORRETTO)
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store/store";
-import { toggleModal } from "@/redux/features/modal/modalSlice";
+import { toggleModal } from "@/redux/features/modal/modalSlice"; // ✅ Solo azioni modal
 import {
   useGetSingleProductQuery,
   useGetAllProductsQuery,
@@ -11,17 +12,17 @@ import {
 } from "@/redux/features/products/ProductAPI";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { toggleTradeIn } from "@/redux/features/tradeIn/showTradeInSlice";
 import Loading from "@/app/loading";
-import { addModalTradeInData } from "@/redux/features/modalTradeInData/ModalTradeInData";
+import {
+  addModalTradeInData,
+  TradeInItem,
+  TradeInDetails,
+} from "@/redux/features/modalTradeInData/ModalTradeInData"; // ✅ Import corretto dei tipi e azioni Trade-In
+import { completeTradeInValuation } from "@/redux/features/tradeIn/showTradeInSlice";
 
-// Variabili d'ambiente (IMPORTANTE: assicurati che sia configurata correttamente)
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// ======================================================================
-// 1. DEFINIZIONI E MOCK
-// ======================================================================
-
+// --- INTERFACCE LOCALI ---
 interface Question {
   id: string;
   text: string;
@@ -34,6 +35,13 @@ interface Question {
   }[];
 }
 
+interface CustomModalProps {
+  open: boolean;
+  onCancel: () => void;
+  children?: React.ReactNode;
+}
+
+// --- DATI MOCK DELLE DOMANDE ---
 const MOCK_QUESTIONS: Question[] = [
   {
     id: "q1_condizione_estetica",
@@ -93,27 +101,12 @@ const MOCK_QUESTIONS: Question[] = [
   },
 ];
 
-// ======================================================================
-// 2. COMPONENTE CustomModal (Componente UI per la Modale)
-// ======================================================================
-
-interface CustomModalProps {
-  open: boolean;
-  onCancel: () => void;
-  // Queste due props sono presenti per mantenere la compatibilità con il tipo
-  onTradeInComplete: (tradeInData: any) => void;
-  productType: string;
-  productName: string;
-  children?: React.ReactNode;
-}
-
+// --- COMPONENTE CustomModal (Non modificato) ---
 const CustomModal: React.FC<CustomModalProps> = ({
   open,
   onCancel,
   children,
-  // ... le altre prop non sono usate qui
 }) => {
-  // Gestisce la chiusura quando si clicca sullo sfondo scuro
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onCancel();
@@ -124,28 +117,25 @@ const CustomModal: React.FC<CustomModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50 transition-opacity duration-300"
       onClick={handleBackdropClick}>
       <div
-        className="relative w-full max-w-lg mx-4 bg-[#eae9ef] rounded-2xl shadow-2xl transition-transform duration-300 transform scale-100"
+        className="w-full max-w-xl bg-[#eae9ef] rounded-t-2xl shadow-xl transition-all duration-300 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        {children}
+        style={{ height: "85vh" }}>
+        <div className="w-10 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-2" />
+
+        <div className="flex flex-col h-[calc(90vh-20px)]">{children}</div>
       </div>
     </div>
   );
 };
 
-// ======================================================================
-// 3. COMPONENTE ConsoleModal (Logica Principale Trade-In)
-// ======================================================================
-
+// --- COMPONENTE ConsoleModal ---
 const ConsoleModal: React.FC = () => {
-  // 🔥 Legge lo stato di apertura direttamente da Redux.
   const isModalOpen = useSelector((state: RootState) => state.modal.modal);
   const dispatch = useDispatch();
 
-  // ----------------------- STATI INTERNI -----------------------
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedConsoleImage, setSelectedConsoleImage] = useState<
@@ -162,91 +152,90 @@ const ConsoleModal: React.FC = () => {
   const FINAL_STEP_INDEX = 6;
   const TOTAL_QUESTION_STEPS = 5;
 
-  // ----------------------- HOOKS API -----------------------
   const params = useParams();
-  const [slug] = useState(params.slug);
-
-  const [getEstimateProductPrice] = useGetEstimateProductPriceMutation();
 
   const { data: productData, isLoading } = useGetSingleProductQuery(
     { slug: productId as string },
     { skip: !productId }
   );
-
   const { data: consoleLists } = useGetAllProductsQuery({ limit: 10 });
 
-  // ----------------------- FUNZIONI DI GESTIONE MODALE -----------------------
+  useEffect(() => {
+    if (currentStep === FINAL_STEP_INDEX) {
+      // Calcolo una volta
+      const val = Math.floor(Math.random() * (400 - 100 + 1) + 100);
+      setEstimatePrice(val); // Se avessi una API, la chiameresti qui
+    }
+  }, [currentStep]);
 
-  // 🔥 Funzione per chiudere la modale tramite Redux e resettare lo stato interno
   const handleCancel = () => {
     dispatch(toggleModal());
-    // Resetta lo step e le risposte per la prossima apertura
     setCurrentStep(0);
     setAnswers({});
     setProductId(null);
-  };
-
-  // Funzione mock per soddisfare il tipo (non usata nella logica Redux)
-  const mockTradeInComplete = (tradeInData: any) => {
-    console.log("Trade-in completato (Mock)", tradeInData);
   };
 
   const getAnswerLabel = useCallback(
     (questionId: string, answerValue: string): string => {
       const question = MOCK_QUESTIONS.find((q) => q.id === questionId);
       const option = question?.options.find((opt) => opt.value === answerValue);
-
-      if (questionId === "q1_condizione_estetica")
-        return option?.label || answerValue;
-      if (questionId === "q2_difetti_tecnici")
-        return `Difetti tecnici: ${option?.label || answerValue}`;
-      if (questionId === "q3_accessori_originali")
-        return `Accessori originali: ${option?.label || answerValue}`;
-      if (questionId === "q4_numero_controller")
-        return `${option?.label || answerValue} Controller`;
-      if (questionId === "q5_memoria") return `${option?.label || answerValue}`;
-      if (questionId === "q6_scatola_originale")
-        return `Scatola originale: ${option?.label || answerValue}`;
-
       return option?.label || answerValue;
     },
     []
   );
 
-  const calculateTradeInValue = useCallback(
-    (currentAnswers: Record<string, string>) => {
-      // Logica per calcolare il prezzo (ora è un mock randomico)
-      setEstimatePrice(Math.floor(Math.random() * (400 - 100 + 1) + 100));
-    },
-    []
-  );
-
   const addTradeIn = async () => {
-    const data = {
-      productName: selectedConsole as string,
-      productPrice: estimatePrice as number,
+    // 1. Mappa le risposte per la sezione Dettagli
+    const details: TradeInDetails = {
+      condition: getAnswerLabel(
+        "q1_condizione_estetica",
+        answers["q1_condizione_estetica"] || ""
+      ),
+      technicalDefects: getAnswerLabel(
+        "q2_difetti_tecnici",
+        answers["q2_difetti_tecnici"] || ""
+      ),
+      accessories: getAnswerLabel(
+        "q3_accessori_originali",
+        answers["q3_accessori_originali"] || ""
+      ),
+      memory: getAnswerLabel("q5_memoria", answers["q5_memoria"] || ""),
+      controllerCount: answers["q4_numero_controller"]
+        ? parseInt(answers["q4_numero_controller"])
+        : 0,
+      box: getAnswerLabel(
+        "q6_scatola_originale",
+        answers["q6_scatola_originale"] || ""
+      ),
     };
 
-    dispatch(addModalTradeInData(data));
-    dispatch(toggleTradeIn());
+    // 2. Crea l'oggetto TradeInItem completo
+    const tradeInItemData: TradeInItem = {
+      productName: selectedConsole,
+      imagePath: selectedConsoleImage || "",
+      details: details,
+    };
 
-    // 🔥 Chiude la modale tramite Redux
+    // 3. Dispatch: Salva i dettagli del Trade-In
+    dispatch(addModalTradeInData(tradeInItemData));
+
+    // 4. Dispatch: Salva il valore di permuta e attiva lo sconto
+    dispatch(completeTradeInValuation(estimatePrice));
+
+    // 5. Chiudi la modale e resetta lo stato
     dispatch(toggleModal());
-    // Resetta lo step dopo la chiusura
     setCurrentStep(0);
   };
-
-  // ----------------------- FUNZIONE DI RENDERING CONTENUTO -----------------------
 
   const renderContent = (): React.JSX.Element | null => {
     if (isLoading) return <Loading />;
 
-    // Mappe Colori (Centralizzate)
     const cardBgColors: Record<string, string> = {
       playstation: "bg-blue-600",
       xbox: "bg-green-600",
       nintendo: "bg-red-600",
     };
+
     const buttonBgColors: Record<string, string> = {
       playstation: "bg-blue-600 hover:bg-blue-700",
       xbox: "bg-green-600 hover:bg-green-700",
@@ -254,234 +243,204 @@ const ConsoleModal: React.FC = () => {
     };
 
     const targetProductType = selectedPlatform.toLowerCase();
-    const buttonColorClass =
-      buttonBgColors[targetProductType] || "bg-orange-500 hover:bg-orange-600";
     const selectionColorClass =
-      cardBgColors[targetProductType] || "bg-blue-600";
+      cardBgColors[targetProductType] || "bg-blue-600"; // --- STEP 0: scelta console ---
 
-    // ----------------------------------------------------------------------
-    // --- STEP 0: Scelta Console ---
-    // ----------------------------------------------------------------------
+    const getSelectionColor = (platform: string): string => {
+      switch (platform.toLowerCase()) {
+        case "playstation":
+          return "bg-[#003Caa]"; // Blu PS
+        case "xbox":
+          return "bg-[#46AA48]"; // Verde Xbox
+        case "nintendo":
+          return "bg-[#DB2220]"; // Rosso Nintendo
+        default:
+          return "bg-gray-500";
+      }
+    };
     if (currentStep === 0) {
       const isConsoleSelected = !!productId;
-
       const filteredConsoles =
         consoleLists?.data?.products?.filter(
-          (consoleItem: any) => consoleItem?.product_type === targetProductType
+          (item: any) => item.product_type === targetProductType
         ) || [];
 
       return (
-        <div className="w-full flex flex-col h-full max-h-[50vh] ">
-          <div className="p-2 bg-white sticky top-0 z-10 border-b border-gray-100 rounded-lg ">
-            <h2 className="text-lg font-semibold text-gray-800 text-left text-center">
-              Quale console vuoi far valutare?
-            </h2>
-          </div>
+        <div className="flex flex-col h-full bg-[#eae9ef]">
+          {" "}
+          {/* Sfondo modale */}
+          {/* -------------------- CONTENUTO PRINCIPALE (Scorrevole) -------------------- */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {/* Blocco 1: Domanda + Tab Piattaforma */}
+            <div className="bg-white p-4 rounded-lg shadow-md mb-4">
+              <h2 className="text-base font-semibold text-gray-700 mb-4">
+                Quale console vuoi far valutare?
+              </h2>
 
-          <div className="px-4 pt-4 flex flex-col flex-grow">
-            {/* 1. FILTRI */}
-            <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
-              {["Playstation", "Xbox", "Nintendo"].map((platform) => (
-                <button
-                  key={platform}
-                  onClick={() => {
-                    setSelectedPlatform(platform);
-                    setProductId(null);
-                    setSelectedConsole("");
-                  }}
-                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-colors duration-150 ${
-                    selectedPlatform === platform
-                      ? `${buttonColorClass} text-white`
-                      : "text-gray-700"
-                  }`}>
-                  {platform}
-                </button>
-              ))}
+              {/* Tab di Filtro Tipo Console (Stile dell'immagine) */}
+              <div className="flex space-x-0 bg-gray-200 p-1 rounded-lg overflow-hidden">
+                {["Playstation", "Xbox", "Nintendo"].map((platform) => (
+                  <button
+                    key={platform}
+                    onClick={() => {
+                      setSelectedPlatform(platform);
+                      setProductId(null);
+                      setSelectedConsole("");
+                    }}
+                    className={`flex-1 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
+                      selectedPlatform === platform
+                        ? getSelectionColor(platform) + " text-white"
+                        : "text-gray-700 bg-gray-200"
+                    }`}>
+                    {platform}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* 2. LISTA DELLE CONSOLE */}
-            <div className="flex flex-col gap-2 overflow-y-auto flex-grow pb-4 -mx-4 px-4 max-h-[250px]">
-              {filteredConsoles.length > 0 ? (
-                filteredConsoles.map((consoleItem: any) => {
-                  const isSelected = productId === consoleItem._id;
-                  const cardColor =
-                    cardBgColors[consoleItem.product_type] || "bg-gray-700";
-                  const consoleImageUrl = `${API_URL}${consoleItem?.images[0]}`;
+            {/* Lista delle Console (Layout verticale a blocco singolo) */}
+            <div className="space-y-2">
+              {filteredConsoles.map((item: any) => {
+                const isSelected = productId === item.slug;
+                const platformColor = getSelectionColor(item.product_type);
 
-                  return (
+                return (
+                  <button
+                    key={item._id}
+                    onClick={() => {
+                      setProductId(item.slug);
+                      setSelectedConsole(item.name);
+                      setSelectedConsoleImage(`${API_URL}${item?.images[0]}`);
+                    }}
+                    className={`w-full flex items-center p-0 rounded-lg shadow-md cursor-pointer border-4 transition-all duration-200 
+                      ${
+                        isSelected
+                          ? // SELEZIONATO: Sfondo colorato, bordo bianco
+                            `border-white ${platformColor}`
+                          : // NON SELEZIONATO: Sfondo bianco, bordo invisibile
+                            "border-transparent bg-white hover:bg-gray-50"
+                      }
+                    `}>
+                    {/* Contenitore Immagine (usiamo una piccola "cover" bianca per replicare il look) */}
                     <div
-                      key={consoleItem?._id}
-                      onClick={() => {
-                        if (productId !== consoleItem?._id) {
-                          setSelectedConsole(consoleItem?.name);
-                          setProductId(consoleItem?._id);
-                          setSelectedConsoleImage(consoleImageUrl); // Aggiunto per riepilogo
-                        } else {
-                          setProductId(null);
-                          setSelectedConsole("");
-                          setSelectedConsoleImage(null);
-                        }
-                      }}
-                      className={`
-                        flex items-center gap-4 min-h-[100px] cursor-pointer rounded-lg transition-colors duration-200
-                        ${
-                          isSelected
-                            ? `${cardColor} text-white`
-                            : "bg-white border-b border-gray-100 hover:bg-gray-50"
-                        }
-                      `}>
-                      <div className="relative w-[100px] h-[70px] flex items-center justify-center flex-shrink-0">
-                        <Image
-                          src={consoleImageUrl}
-                          width={100}
-                          height={70}
-                          alt={consoleItem?.name}
-                          className="object-contain flex-shrink-0"
-                        />
-                      </div>
-                      <span
-                        className={`text-xl font-bold leading-snug ${
-                          isSelected ? "text-white" : "text-gray-800"
-                        }`}>
-                        {consoleItem?.name}
-                      </span>
+                      className={`w-24 h-24 flex-shrink-0 relative ${
+                        isSelected ? "bg-white rounded-l-lg" : "bg-transparent"
+                      }`}>
+                      <img
+                        src={`${API_URL}${item?.images[0]}`}
+                        alt={item?.name}
+                        className="w-full aspect-square rounded-t-lg bg-cover bg-center"
+                        style={{
+                          backgroundImage: `url('/sell/${item?.product_type}-sq.jpeg')`,
+                        }}
+                      />{" "}
                     </div>
-                  );
-                })
-              ) : (
-                <p className="text-center text-gray-500 pt-8">
-                  Nessuna console {selectedPlatform} trovata.
-                </p>
-              )}
+
+                    {/* Nome Console */}
+                    <span
+                      className={`flex-1 text-left px-4 text-xl font-bold ${
+                        isSelected ? "text-white" : "text-gray-800"
+                      }`}>
+                      {item.name}
+                    </span>
+                  </button>
+                );
+              })}
+              {/* Spazio per la lista */}
+              <div className="h-4" />
             </div>
           </div>
-
-          {/* Footer Fisso con pulsante Continua */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 rounded-lg shadow-xl">
+          {/* -------------------- FOOTER: Pulsante Continua -------------------- */}
+          <div className="bg-white p-4 flex-shrink-0 shadow-2xl sticky bottom-0">
             <button
-              onClick={() => {
-                if (isConsoleSelected) {
-                  setCurrentStep(1); // Vai al primo blocco di domande
-                  setCurrentQuestionIndex(0); // Inizia dalla prima domanda
-                }
-              }}
+              onClick={() => setCurrentStep(1)}
               disabled={!isConsoleSelected}
-              className={`
-                w-full py-3 rounded-xl text-lg font-bold text-white transition-opacity duration-200
-                ${
-                  isConsoleSelected
-                    ? "bg-orange-500 hover:bg-orange-600"
-                    : "bg-gray-400 cursor-not-allowed opacity-70"
-                }
-              `}>
+              className={`w-full py-3 rounded-lg font-bold text-white text-lg transition ${
+                isConsoleSelected
+                  ? "bg-orange-500 hover:bg-orange-600"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}>
               CONTINUA
             </button>
           </div>
         </div>
       );
     }
-
-    // ----------------------------------------------------------------------
-    // --- STEP 1, 2, 3, 4, 5: Blocchi di Domande ---
-    // ----------------------------------------------------------------------
     if (currentStep >= 1 && currentStep <= TOTAL_QUESTION_STEPS) {
-      const allQuestions: Question[] =
-        productData?.data?.questions || MOCK_QUESTIONS;
-      const allQuestionsForStep = allQuestions.filter(
-        (q) => q.step === currentStep
+      const allQuestions = productData?.data?.questions || MOCK_QUESTIONS;
+      const stepQuestions = allQuestions.filter(
+        (q: Question) => q.step === currentStep
       );
-      const currentQuestion = allQuestionsForStep[currentQuestionIndex];
-      const isLastQuestionInStep =
-        currentQuestionIndex === allQuestionsForStep.length - 1;
-
-      if (!currentQuestion) {
-        return null;
-      }
-
-      const handleAnswer = (answerValue: string) => {
-        const questionId = currentQuestion.id || currentQuestion.text;
-        setAnswers({
-          ...answers,
-          [questionId]: answerValue,
-        });
-      };
+      const currentQuestion = stepQuestions[currentQuestionIndex];
+      const selectedAnswer = answers[currentQuestion.id];
 
       const handleContinue = () => {
-        if (isLastQuestionInStep) {
-          if (currentStep < TOTAL_QUESTION_STEPS) {
-            setCurrentStep(currentStep + 1);
-            setCurrentQuestionIndex(0);
-          } else {
-            calculateTradeInValue(answers);
-            setCurrentStep(FINAL_STEP_INDEX);
-          }
+        const nextIndex = currentQuestionIndex + 1;
+        if (nextIndex < stepQuestions.length) {
+          setCurrentQuestionIndex(nextIndex);
         } else {
-          setCurrentQuestionIndex((prev) => prev + 1);
+          setCurrentQuestionIndex(0);
+          setCurrentStep(currentStep + 1);
         }
       };
 
-      const selectedAnswerValue =
-        answers[currentQuestion.id || currentQuestion.text];
-
       return (
-        <div className="w-full flex flex-col h-full max-h-[70vh]">
-          {/* Header: Titolo Domanda e Pulsante Indietro */}
-          <div className="p-4 bg-white sticky top-0 z-10 border-b border-gray-100 rounded-lg flex-shrink-0">
-            <h2 className="text-lg font-semibold text-gray-800 text-center w-full pr-10 text-center">
+        <div className="flex flex-col h-full">
+          <div className="p-4 bg-white border-b flex-shrink-0 text-center">
+            <h2 className="text-lg font-semibold text-gray-800">
               {currentQuestion.text}
             </h2>
           </div>
 
-          {/* Corpo: Opzioni di Risposta (Scorrevole) */}
-          <div className="px-4 pt-4 flex flex-col flex-grow overflow-y-auto">
+          <div className="flex-1 overflow-y-auto px-4 py-4">
             <div className="flex flex-col gap-4">
-              {currentQuestion.options.map((option: any) => {
-                const isSelected = selectedAnswerValue === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    onClick={() => handleAnswer(option.value)}
-                    className={`
-                      py-5 px-4 border rounded-xl text-center text-3xl font-bold transition-all duration-150 shadow-md
-                      ${
-                        isSelected
-                          ? `${selectionColorClass} text-white border-0`
-                          : "bg-white border-gray-300 text-gray-800 hover:border-gray-500"
+              {currentQuestion.options.map(
+                (option: {
+                  value: string;
+                  label: string;
+                  description?: string;
+                }) => {
+                  const isSelected = selectedAnswer === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() =>
+                        setAnswers({
+                          ...answers,
+                          [currentQuestion.id]: option.value,
+                        })
                       }
-                    `}>
-                    {option.label}
-                  </button>
-                );
-              })}
+                      className={`py-5 px-4 border rounded-xl text-center text-xl font-bold shadow-md ${
+                        isSelected
+                          ? "bg-blue-600 text-white"
+                          : "bg-white border-gray-300 text-gray-800 hover:border-gray-500"
+                      }`}>
+                      {option.label}
+                    </button>
+                  );
+                }
+              )}
             </div>
           </div>
 
-          {/* Footer Fisso con Pulsante CONTINUA */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 mt-4 rounded-lg shadow-xl ">
+          <div className="bg-white border-t p-4 flex-shrink-0">
             <button
               onClick={handleContinue}
-              disabled={!selectedAnswerValue}
-              className={`
-                w-full py-3 rounded-xl text-lg font-bold text-white transition-opacity duration-200
-                ${
-                  selectedAnswerValue
-                    ? "bg-orange-500 hover:bg-orange-600"
-                    : "bg-gray-400 cursor-not-allowed opacity-70"
-                }
-              `}>
-              {isLastQuestionInStep && currentStep === TOTAL_QUESTION_STEPS
-                ? "VEDI VALORE"
-                : "CONTINUA"}
+              disabled={!selectedAnswer}
+              className={`w-full py-3 rounded-xl font-bold text-white transition ${
+                selectedAnswer
+                  ? "bg-orange-500 hover:bg-orange-600"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}>
+              CONTINUA
             </button>
           </div>
         </div>
       );
-    }
-
-    // ----------------------------------------------------------------------
-    // --- 🟢 STEP 6: Riepilogo Finale ---
-    // ----------------------------------------------------------------------
+    } // --- STEP 6: riepilogo / offerta ---
+    const selectedProduct = productData?.data?.product;
     if (currentStep === FINAL_STEP_INDEX) {
+      // Le tue variabili di risposta...
       const conditionAnswer = getAnswerLabel(
         "q1_condizione_estetica",
         answers["q1_condizione_estetica"] || ""
@@ -502,126 +461,121 @@ const ConsoleModal: React.FC = () => {
         "q3_accessori_originali",
         answers["q3_accessori_originali"] || ""
       );
-      const boxAnswer = getAnswerLabel(
-        "q6_scatola_originale",
-        answers["q6_scatola_originale"] || ""
-      );
+      // ...
 
-      const mainDetails = [memoryAnswer, controllerAnswer]
-        .filter(Boolean)
+      // Unisci i dettagli principali per la riga Sottotitolo (es. "Slim | 1TB | 2 Controller | Brand New Condition")
+      const mainDetailsLine = [
+        selectedProduct?.model || "",
+        memoryAnswer,
+        `${controllerAnswer} Controller`,
+        conditionAnswer,
+      ]
+        .filter((detail) => detail && detail !== "-")
         .join(" | ");
 
-      return (
-        <div className="w-full min-h-[500px] p-4 flex flex-col">
-          <h2 className="flex items-center gap-5 text-lg font-semibold text-[#101010] mt-4">
-            Il tuo prezzo Trade-in
-          </h2>
+      // Estrai i difetti e gli accessori per la sezione dettagli (come nell'immagine)
+      const technicalDefectsText =
+        technicalDefects.toLowerCase() === "sì" ? "No" : "Sì";
+      const accessoriesText = accessories.toLowerCase() === "sì" ? "Sì" : "No";
 
-          {/* Contenitore principale del riepilogo della console */}
-          <div className="p-4 bg-white rounded-lg mt-4 flex flex-col shadow-md">
-            <div className="flex gap-4 items-center">
-              {/* Immagine Placehoder */}
-              <div
-                className={`relative w-[100px] h-[70px] bg-gray-200 rounded-lg flex-shrink-0`}>
-                {selectedConsoleImage ? (
-                  <Image
-                    src={selectedConsoleImage}
-                    width={100}
-                    height={70}
-                    alt={selectedConsole || "Console"}
-                    className="object-contain"
-                  />
-                ) : (
-                  <div
-                    className={`w-full h-full flex items-center justify-center text-xs text-white ${
-                      cardBgColors[targetProductType] || "bg-gray-500"
-                    }`}>
-                    {selectedPlatform.toUpperCase()}
+      return (
+        <div className="flex flex-col h-full bg-[#eae9ef]">
+          {/* -------------------- INTESTAZIONE (Titolo) -------------------- */}
+          <div className="p-4 bg-white border-b text-center sticky top-0 z-10 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-800">
+              Il tuo prezzo Trade-in
+            </h2>
+          </div>
+
+          {/* -------------------- CONTENUTO PRINCIPALE (Scorrevole) -------------------- */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* BLOCCO RIEPILOGO CONSOLE (Come la card bianca nell'immagine) */}
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <div className="flex gap-4">
+                {/* Immagine */}
+                {selectedConsoleImage && (
+                  <div className="w-[100px] h-[70px] flex-shrink-0 relative">
+                    <Image
+                      src={selectedConsoleImage}
+                      alt={selectedConsole}
+                      width={100}
+                      height={70}
+                      style={{ objectFit: "contain" }}
+                      className="rounded-lg"
+                    />
                   </div>
                 )}
-              </div>
 
-              {/* Dettagli Console */}
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center pr-2">
-                  <h3 className="text-xl font-bold text-gray-800 truncate">
-                    {selectedConsole || "Console Selezionata"}
+                {/* Dettagli riepilogativi */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {selectedConsole}
                   </h3>
 
-                  {/* Riga Condizione Estetica + TOGGLE */}
-                  <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className="text-gray-500 hover:text-gray-700 p-1 transition-transform duration-300 transform"
-                    title={
-                      showDetails ? "Nascondi dettagli" : "Mostra dettagli"
-                    }>
-                    <svg
-                      className={`w-5 h-5 ${
-                        showDetails ? "rotate-0" : "rotate-180"
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 15l7-7 7 7"></path>
-                    </svg>
-                  </button>
+                  {/* Riga Dettagli Principali */}
+                  <p className="text-sm text-gray-600 mb-2">
+                    {mainDetailsLine}
+                  </p>
+
+                  {/* Dettagli Aggiuntivi sotto i principali */}
+                  <div className="text-sm text-gray-700">
+                    {/* 💡 Nota: I dati visualizzati devono essere le RISPOSTE FINALI, non le domande */}
+                    <p>
+                      Difetti tecnici:{" "}
+                      <span className="font-semibold">
+                        {technicalDefectsText}
+                      </span>
+                    </p>
+                    <p>
+                      Accessori originali:{" "}
+                      <span className="font-semibold">{accessoriesText}</span>
+                    </p>
+                  </div>
+
+                  {/* Rimuovi completamente il blocco showDetails e il pulsante freccia */}
                 </div>
               </div>
             </div>
 
-            {/* Blocco Dettagli Risposte (Espandibile/Comprimibile) */}
-            {showDetails && (
-              <div className="border-t border-gray-200 mt-3 pt-3 text-sm space-y-1">
-                <p className="text-sm text-gray-800 font-medium">
-                  {conditionAnswer}
-                </p>
-                <p className="text-sm text-gray-600 mb-2 truncate">
-                  {mainDetails}
+            {/* BLOCCO OFFERTA (La nostra offerta: €X.XX) */}
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <div className="flex justify-between items-center">
+                <p className="text-lg font-semibold text-gray-800">
+                  La nostra offerta:
                 </p>
 
-                <p className="text-gray-600">{technicalDefects}</p>
-                <p className="text-gray-600">{accessories}</p>
-                <p className="text-gray-600">{boxAnswer}</p>
+                <h2 className="text-4xl font-semibold text-gray-900">
+                  €{estimatePrice.toFixed(2)}
+                </h2>
               </div>
-            )}
-
-            {/* Offerta Prezzo */}
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 GAP">
-              <p className="text-lg font-semibold text-gray-800">
-                La nostra offerta:
-              </p>
-              <h2 className="text-4xl font-semibold ">
-                €{estimatePrice.toFixed(2)}
-              </h2>
             </div>
+
+            {/* Testo informativo (Come nell'immagine) */}
+            <p className="text-sm text-gray-600 px-2">
+              Dopo aver inserito nel carrello il trade-in ti manderemo, nel giro
+              di 1‑3 giorni lavorativi, tutto l’occorrente per spedirci il tuo
+              dispositivo gratuitamente!
+              <br />
+              <br />
+              Quando riceveremo il tuo dispositivo ci riserveremo 2‑3 giorni
+              lavorativi per testarlo, dopodiché ti invieremo l’importo stimato.
+            </p>
           </div>
 
-          {/* Testo informativo in basso */}
-          <p className="text-sm text-gray-500 leading-5 mt-4">
-            Dopo aver inserito nel carrello il trade-in ti manderemo, nel giro
-            di 1-3 giorni lavorativi, tutto l'occorrente per spedirci il tuo
-            dispositivo gratuitamente. Quando riceveremo il tuo dispositivo ci
-            riserveremo 2-3 giorni lavorativi per testarlo, dopodiché ti
-            invieremo l'importo stimato.
-          </p>
-
-          {/* Bottoni finali */}
-          <div className="flex gap-4 justify-end mt-10 bg-white">
-            <button
-              onClick={handleCancel}
-              className="py-3 px-3 rounded-xl text-base font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors">
-              SKIP TRADE-IN
-            </button>
-            <button
-              onClick={() => addTradeIn()}
-              className="py-3 px-6 rounded-xl text-base font-medium text-[#FDFDFD] bg-orange-500 hover:bg-orange-600 transition-colors">
-              ADD TRADE-IN
-            </button>
+          {/* -------------------- FOOTER: Pulsanti (SKIP / ADD TRADE-IN) -------------------- */}
+          <div className="bg-white border-t p-4 flex-shrink-0 shadow-2xl sticky bottom-0">
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancel}
+                className="flex-1 py-3 px-3 rounded-lg text-lg font-bold text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors">
+                SKIP TRADE-IN
+              </button>
+              <button
+                onClick={addTradeIn}
+                className="flex-1 py-3 px-6 rounded-lg text-lg font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors">
+                ADD TRADE-IN
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -629,15 +583,8 @@ const ConsoleModal: React.FC = () => {
     return null;
   };
 
-  // ----------------------- COMPONENTE PRINCIPALE RETURN -----------------------
-
   return (
-    <CustomModal
-      open={isModalOpen} // Usa lo stato Redux DIRETTO
-      onCancel={handleCancel} // Usa la funzione che chiude via Redux
-      onTradeInComplete={mockTradeInComplete} // Funzione mock per il tipo
-      productType={selectedPlatform.toLowerCase()}
-      productName={selectedConsole || "Console"}>
+    <CustomModal open={isModalOpen} onCancel={handleCancel}>
       {renderContent()}
     </CustomModal>
   );

@@ -1,3 +1,5 @@
+// CartPage.tsx (CORRETTO)
+
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -5,19 +7,24 @@ import { useGetProductsByIdsQuery } from "@/redux/features/products/GetProductBy
 import Image from "next/image";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/redux/store/store";
 import { modifiedCart } from "@/redux/features/cart/TrackCartItem";
 import { useRouter } from "next/navigation";
 import Loading from "../loading";
 import React from "react";
 
-// Assicurati che il percorso sia corretto. Ho usato 'ProductReviewGrid' come nome più probabile
-// dato il contesto dei problemi precedenti. Se usi il carosello, assicurati che la prop sia solo la stringa!
-import ReviewCarousel from "@/components/share/review-carousel/ReviewCarousel";
-import Accordion from "@/components/accordion/Accordion";
+// 🚀 IMPORT DELLE AZIONI TRADE-IN (Corretto l'import da ModalTradeInData)
+import { resetTradeInValuation } from "@/redux/features/tradeIn/showTradeInSlice";
+import { clearTradeInItemDetails } from "@/redux/features/modalTradeInData/ModalTradeInData"; // ✅ Corretto l'import
 
-// IMPORTAZIONI DELLE ICONE
+// IMPORTAZIONI DELLE ICONE (Assumo siano necessarie)
 import { ShieldCheck, Truck, RefreshCw, Plus, Minus } from "lucide-react";
+
+// IMPORTAZIONI DEI COMPONENTI (Assumo siano necessarie)
+import ReviewCarousel from "@/components/share/review-carousel/ReviewCarousel";
+import TrustSection from "@/components/buy/TrustSection";
+import Accordion from "@/components/accordion/Accordion";
 
 // Assumiamo che la struttura del prodotto sia la seguente
 interface IProduct {
@@ -42,12 +49,28 @@ interface IProduct {
 }
 
 export default function CartPage() {
-  // Ripristinato l'uso della variabile d'ambiente per l'URL API
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "https://api.consolelocker.it";
   const dispatch = useDispatch();
   const router = useRouter();
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+
+  // ************************************************************
+  // 🚀 LETTURA DATI TRADE-IN DA REDUX
+  // ************************************************************
+  const tradeInFinalValue = useSelector(
+    (state: RootState) => state.showTradeInData.tradeInFinalValue
+  );
+  const tradeInIsActive = useSelector(
+    (state: RootState) => state.showTradeInData.isTradeInActive
+  );
+  // ✅ Selezionato il dato dal corretto slice e nome di stato
+  const tradeInDetailsFromRedux = useSelector(
+    (state: RootState) => state.modalTradeInDataSlice.modalTradeInData
+  );
+  // ************************************************************
+  // FINE LETTURA DATI TRADE-IN DA REDUX
+  // ************************************************************
 
   const getProductIds = () => {
     const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
@@ -63,12 +86,8 @@ export default function CartPage() {
     refetch,
   } = useGetProductsByIdsQuery(getProductIds());
 
-  // DATI DINAMICI DERIVATI DAL CARRELLO
-  const product = { product: products?.data?.products?.[0] };
-  // const productType = product.product?.product_type?.toLowerCase() || "default"; // Lascio commentato se non usato
-
   // ************************************************************
-  // FUNZIONI DI CARRELLO COMPLETE
+  // FUNZIONI DEL CARRELLO
   // ************************************************************
 
   const getProductQuantity = (id: string) => {
@@ -95,37 +114,38 @@ export default function CartPage() {
   const subtotal = products?.data?.products.reduce(
     (total: number, product: IProduct) => {
       const quantity = getProductQuantity(product?._id);
-
-      // Usiamo il prezzo in offerta se esiste
       const price =
         product.offer_price > 0 ? product.offer_price : product.price;
-
       return total + quantity * price;
     },
     0
   );
 
   const shipping = 0;
-  const total = subtotal + shipping;
+  const total = subtotal + shipping; // Totale del carrello prima della permuta
 
+  // 🚀 LOGICA DI RECUPERO DETTAGLI TRADE-IN
   const getTradeInDetails = () => {
-    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
-    const tradeInItem = cart.find(
-      (item: any) => item.tradeIn && Object.keys(item.tradeIn).length > 0
-    );
+    if (!tradeInIsActive || tradeInFinalValue <= 0) return null;
 
-    if (!tradeInItem) return null;
+    const details = tradeInDetailsFromRedux;
+
+    if (!details || !details.productName || !details.details) return null;
 
     return {
-      name: tradeInItem.tradeIn.name || "Prodotto Sconosciuto",
-      condition: tradeInItem.tradeIn.condition || "N/D",
-      memory: tradeInItem.tradeIn.memory || "N/D",
-      controllerCount: tradeInItem.tradeIn.controllerCount || 0,
-      technicalIssues: tradeInItem.tradeIn.technicalIssues || "No",
-      originalAccessories: tradeInItem.tradeIn.originalAccessories || "Sì",
-      tradeInValue: tradeInItem.tradeIn.value || 0,
-      imagePath: tradeInItem.tradeIn.imagePath || "/placeholder.png",
-      originalPrice: subtotal,
+      name: details.productName || "Prodotto Sconosciuto",
+
+      condition: details.details.condition || "N/D",
+      memory: (details.details as any).memory || "N/D",
+      controllerCount: (details.details as any).controllerCount || 0,
+
+      technicalIssues: details.details.technicalDefects || "No",
+      originalAccessories: details.details.accessories || "Sì",
+      box: (details.details as any).box || "N/D", // Aggiunto Box
+
+      tradeInValue: tradeInFinalValue,
+      imagePath: details.imagePath || "/placeholder.png",
+      originalPrice: total,
     };
   };
 
@@ -134,25 +154,30 @@ export default function CartPage() {
     ? total - tradeInDetails.tradeInValue
     : total;
 
+  // 🚀 FUNZIONE removeTradeIn (Usa le azioni Redux)
   const removeTradeIn = () => {
-    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
-    const updatedCart = cart.map((item: any) => {
-      if (item.tradeIn) {
-        // Rimuove la chiave tradeIn dall'oggetto
-        const { tradeIn, ...rest } = item;
-        return rest;
-      }
-      return item;
-    });
+    dispatch(resetTradeInValuation());
+    dispatch(clearTradeInItemDetails()); // ✅ Usata l'azione corretta
 
+    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
+    const updatedCart = cart.filter((item: any) => !item.isTradeIn);
     localStorage?.setItem("cart", JSON.stringify(updatedCart));
-    refetch();
+
     dispatch(modifiedCart({}));
-    router.refresh(); // Forza il re-render se necessario
+    router.refresh();
   };
 
-  // Funzioni per l'aumento/diminuzione della quantità (necessarie per la sezione "Potrebbe anche interessarti")
+  // 🚀 FUNZIONE handleCheckout
+  const handleCheckout = () => {
+    if (products?.data?.products?.length === 0) {
+      toast.error("Please, add the product first!");
+      router.push("/buy");
+    } else {
+      router.push("/checkout");
+    }
+  };
 
+  // Funzioni per l'aumento/diminuzione della quantità (lasciate inalterate)
   const handleAddToCart = (id: string) => {
     refetch();
     dispatch(modifiedCart({}));
@@ -205,8 +230,8 @@ export default function CartPage() {
       return;
     }
 
-    const updatedCart = cartData?.map((item: any) => {
-      if (item.productId === id) {
+    const updatedCart = cartData.map((item: any) => {
+      if (item.productId === id && item.quantity > 1) {
         return { ...item, quantity: item.quantity + 1 };
       }
 
@@ -236,19 +261,8 @@ export default function CartPage() {
 
     localStorage?.setItem("cart", JSON.stringify(updatedCart));
   };
-
-  // Funzione di checkout
-  const handleCheckout = () => {
-    if (products?.data?.products?.length === 0) {
-      toast.error("Please, add the product first!");
-      router.push("/buy");
-    } else {
-      router.push("/checkout");
-    }
-  };
-
   // ************************************************************
-  // FINE FUNZIONI DI CARRELLO COMPLETE
+  // FINE FUNZIONI DEL CARRELLO
   // ************************************************************
 
   if (isLoading) {
@@ -258,7 +272,7 @@ export default function CartPage() {
   return (
     <div className="bg-[#eae9ef]">
       <div className="mx-5 py-4">
-        {/* Intestazione del Carrello */}
+        {/* Intestazione del Carrello e Lista Prodotti */}
         <div className="mb-5">
           <h2 className="text-[32px] font-semibold text-[#101010]">
             Il tuo carrello
@@ -269,12 +283,9 @@ export default function CartPage() {
             {products?.data?.products.length} articoli nel tuo carrello:
           </p>
         </div>
-
-        {/* Lista degli Elementi nel Carrello */}
         <div className="flex flex-col gap-3">
           {products?.data?.products?.map((product: IProduct) => {
             const imagePath = product?.images[0] || "";
-            // Rimuoviamo il '/' iniziale se presente per non duplicarlo con l'API_URL
             const cleanImagePath = imagePath.startsWith("/")
               ? imagePath.substring(1)
               : imagePath;
@@ -283,10 +294,8 @@ export default function CartPage() {
               <div
                 key={product?._id}
                 className="bg-white flex gap-3 p-3 border border-gray-200 rounded-lg shadow-sm">
-                {/* Dettagli Prodotto */}
                 <div className="w-[120px] h-[120px] overflow-hidden rounded-md flex-shrink-0">
                   <Image
-                    // Ora funziona grazie a next.config.js
                     src={`${API_URL}/${cleanImagePath}`}
                     className="w-full h-full object-cover"
                     width={300}
@@ -297,7 +306,6 @@ export default function CartPage() {
                     }}
                   />
                 </div>
-
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <h3 className="text-lg text-[#101010] font-semibold">
@@ -322,7 +330,6 @@ export default function CartPage() {
                         ).toFixed(2)}
                       </h4>
                     </div>
-
                     <div
                       onClick={() => removeItem(product?._id)}
                       className="flex items-center text-red-600 text-sm font-medium cursor-pointer hover:text-red-800 transition-colors">
@@ -354,7 +361,7 @@ export default function CartPage() {
         {/* SEZIONE: VALUTAZIONE TRADE-IN */}
         {/* ------------------------------------------------------------------ */}
         {tradeInDetails && (
-          <div className=" mb-5 space-y-4">
+          <div className=" mt-5 mb-5 space-y-4">
             <h2 className="text-2xl font-semibold text-[#101010]">
               Valutazione trade-in
             </h2>
@@ -364,7 +371,7 @@ export default function CartPage() {
             <div className="bg-white flex gap-3 p-3 border border-gray-200 rounded-lg shadow-sm">
               <div className="w-[120px] h-[120px] overflow-hidden rounded-md flex-shrink-0">
                 <Image
-                  src="/placeholder.png"
+                  src={tradeInDetails.imagePath}
                   className="w-full h-full object-cover"
                   width={300}
                   height={300}
@@ -381,7 +388,7 @@ export default function CartPage() {
                     Controller
                   </p>
                   <p className="text-sm font-normal text-gray-700 mb-2">
-                    {tradeInDetails.condition}
+                    Condizione: {tradeInDetails.condition}
                   </p>
                   <p className="text-sm font-normal text-gray-700">
                     **Difetti tecnici:** {tradeInDetails.technicalIssues}
@@ -389,6 +396,9 @@ export default function CartPage() {
                   <p className="text-sm font-normal text-gray-700">
                     **Accessori originali:**{" "}
                     {tradeInDetails.originalAccessories}
+                  </p>
+                  <p className="text-sm font-normal text-gray-700">
+                    **Scatola originale:** {tradeInDetails.box}
                   </p>
                 </div>
                 <div className="flex items-end justify-end mt-auto">
@@ -429,7 +439,6 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Testo informativo Trade-in */}
             <div className="text-base text-gray-700 space-y-3 pt-3">
               <p>
                 Dopo aver inserito nel carrello il trade-in ti manderemo, nel
@@ -454,177 +463,33 @@ export default function CartPage() {
           </h2>
         </div>
 
-        {/* Sezione 'You might also be interested in' */}
-        <div className="w-full pb-9">
-          <div className="mx-5 border-b-2 border-b-[#B8B8B8] space-x-4 pt-3 mb-6">
-            <h2 className="text-[#101010] text-xl font-semibold pb-3">
-              Potrebbe anche interessarti
-            </h2>
-          </div>
-
-          <div className="mx-5 grid grid-cols-2 gap-x-2 gap-y-4">
-            {products?.data?.variants?.map((product: IProduct) => {
-              const imagePath = product?.images[0] || "";
-              const cleanImagePath = imagePath.startsWith("/")
-                ? imagePath.substring(1)
-                : imagePath;
-
-              // Verifica la quantità nel carrello per il controllo (+/-)
-              const currentQuantity = getProductQuantity(product._id);
-
-              return (
-                <div key={product?._id} className="bg-[#FDFDFD] rounded-lg">
-                  {/* Immagine */}
-                  <div className="p-2">
-                    <Image
-                      src={`${API_URL}/${cleanImagePath}`}
-                      className="w-full h-full"
-                      width={600}
-                      height={600}
-                      alt={product.name}
-                      style={{
-                        backgroundImage: `url('/sell/${product?.product_type}-sq.jpeg')`,
-                      }}
-                    />
-                  </div>
-
-                  {/* Dettagli Varianti e Controlli (LAYOUT CORRETTO E COMPLETO) */}
-                  <div className="p-2 pt-0">
-                    {/* Blocco Nome e Prezzo */}
-                    <div className="border-b border-b-[#B5B5B5] pb-2 mb-2">
-                      <div className="text-base font-semibold">
-                        {product.brand}{" "}
-                        <span className="font-normal block text-sm">
-                          {product.name}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-start w-full mt-2">
-                        <span className="text-xl font-bold text-[#101010]">
-                          &euro;{product.offer_price.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Logica Aggiungi/Controlli Quantità */}
-                    {currentQuantity === 0 ? (
-                      // Bottone Add to Cart per il primo inserimento (Larghezza completa)
-                      <button
-                        onClick={() => handleAddToCart(product._id)}
-                        className="w-full bg-[#FD9A34] text-white p-2 rounded-lg text-base font-semibold">
-                        Aggiungi
-                      </button>
-                    ) : (
-                      // Controlli Quantità (Mostrati se il prodotto è già nel carrello)
-                      <div className="flex items-center justify-between gap-2.5">
-                        <button
-                          onClick={() => decreaseQuantity(product._id)}
-                          className="bg-[#FD9A34] text-white p-2 rounded-lg">
-                          <Minus size={16} />
-                        </button>
-                        <span className="p-2 border text-lg font-medium flex-1 text-center">
-                          {currentQuantity}
-                        </span>
-                        <button
-                          onClick={() => increaseQuantity(product._id)}
-                          className="bg-[#FD9A34] text-white p-2 rounded-lg">
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        {/* /* FINE 'You might also be interested in' */}
-
         {/* ------------------------------------------------------------------ */}
-        {/* SEZIONE: Vantaggi e Pagamento a Rate */}
+        {/* NUOVA SEZIONE: Vantaggi e Pagamento a Rate */}
         {/* ------------------------------------------------------------------ */}
-        <div className="mt-5 px-5 py-4 rounded-lg shadow-sm">
-          {/* Blocco Pagamento a Rate */}
-          <div className="p-4 mb-4 rounded-lg shadow-md bg-[#FDFDFD] border border-gray-300">
-            <div className="flex items-center justify-center space-x-2">
-              <p className="text-xl font-bold text-[#101010]">
-                Paga in 3 rate con
-              </p>
-              <Image
-                src="/payments/paypal2.svg"
-                alt="PayPal"
-                width={75}
-                height={20}
-                className="h-5 w-auto"
-              />
-              <p className="text-xl font-bold text-[#101010]">o</p>
-              <Image
-                src="/payments/klarna.png"
-                alt="Klarna"
-                width={40}
-                height={20}
-                className="h-10 w-auto"
-              />
-            </div>
-            <p className="text-base text-center text-gray-700 mt-1">
-              senza interessi né costi aggiuntivi.
-            </p>
-          </div>
-
-          {/* Blocchetto Vantaggi (Icone) */}
-          <div className="bg-[#FDFDFD] p-4 rounded-lg shadow-md space-y-4">
-            <div className="flex items-center space-x-3">
-              <ShieldCheck className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                Riconfezionato -{" "}
-                <span className="font-bold">12 Mesi di garanzia.</span>
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Truck className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                <span className="font-bold">Spedizione Veloce e Gratuita.</span>
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <RefreshCw className="h-6 w-6 text-gray-600 flex-shrink-0" />
-              <p className="text-lg text-[#101010] font-medium">
-                Hai cambiato idea?{" "}
-                <span className="font-bold">Il reso è gratuito.</span>
-              </p>
-            </div>
-          </div>
-        </div>
-        {/* FINE Vantaggi e Pagamento a Rate */}
-
+        <TrustSection className="px-5 py-4" innerBlockBgClass="bg-[#FDFDFD]" />
         {/* ------------------------------------------------------------------ */}
         {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
-        {/* ------------------------------------------------------------------ */}
-        <Accordion
-          productName={product.product?.name || ""}
-          productType={""}
-          productSpecs={product.product?.technical_specs}
-          productDescription={
-            product.product?.long_description ||
-            product.product?.description ||
-            ""
-          }
-          modelDes={product.product?.modelDes}
-          controllerDes={product.product?.controllerDes}
-          memoryDes={product.product?.memoryDes}
-          conditionDes={product.product?.conditionDes}
-        />
-        {/* FINE ACCORDION */}
-
-        {/* ------------------------------------------------------------------ */}
-        {/* SEZIONE DELLE RECENSIONI */}
-        {/* ------------------------------------------------------------------ */}
-        <div className="mt-6 ">
-          <ReviewCarousel productName={products} theme="white" />
+        <div className="px-5 pb-8 mt-6">
+          <Accordion
+            productName={products.product?.name || ""}
+            productType={""}
+            productSpecs={products.product?.technical_specs}
+            productDescription={
+              products.product?.long_description ||
+              products.product?.description ||
+              ""
+            }
+            modelDes={products.product?.modelDes}
+            controllerDes={products.product?.controllerDes}
+            memoryDes={products.product?.memoryDes}
+            conditionDes={products.product?.conditionDes}
+          />
         </div>
-        {/* FINE SEZIONE RECENSIONI */}
-        {/* Footer di Pagamento */}
+        <div className="mt-6">
+          <ReviewCarousel productName={products.name} theme="white" />
+        </div>
       </div>
+      {/* FOOTER FISSO */}
       <div className="sticky bottom-0 z-50 w-full bg-[#FDFDFD] shadow-2xl border-t border-gray-200 p-5">
         <button
           onClick={handleCheckout}

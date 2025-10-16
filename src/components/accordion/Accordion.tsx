@@ -86,7 +86,7 @@ const FaqAccordion: React.FC<{ productType: string }> = ({ productType }) => {
   const textColorClass = getTextColorClass(isDark);
 
   return (
-    <div className={`space-y-4 max-w-xl ${baseBg}`}>
+    <div className={`space-y-4 max-w-xl ${baseBg} z-100`}>
       {FAQ_ITEMS.map((item) => {
         const isOpen = openFaq === item.question;
         let roundedClasses = isOpen ? "rounded-t-lg" : "rounded-lg";

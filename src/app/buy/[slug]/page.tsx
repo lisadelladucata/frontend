@@ -2,10 +2,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { Check, ChevronUp, ChevronDown, Plus, Minus } from "lucide-react";
+import { Check } from "lucide-react";
 import ConsoleModal from "@/components/modal/Modal";
 import { useDispatch, useSelector } from "react-redux";
-import { toggleModal } from "@/redux/features/modal/modalSlice";
 import { RootState } from "@/redux/store/store";
 import {
   useFindSlugProductQuery,
@@ -18,71 +17,187 @@ import { modifiedCart } from "@/redux/features/cart/TrackCartItem";
 import ReviewCarousel from "@/components/share/review-carousel/ReviewCarousel";
 import TrustSection from "@/components/buy/TrustSection";
 import Accordion from "@/components/accordion/Accordion";
+import { toggleModal, openModal } from "@/redux/features/modal/modalSlice";
+import {
+  TradeInItem as ModalTradeInData,
+  clearTradeInItemDetails,
+} from "@/redux/features/modalTradeInData/ModalTradeInData";
+import { resetTradeInValuation } from "@/redux/features/tradeIn/showTradeInSlice";
 
-interface ModalTradeInData {
-  productName: string;
-  productPrice: number;
+// --- INTERFACCE ---
+interface ProductData {
+  product: {
+    _id: string;
+    name: string;
+    offer_price: number;
+    images: string[];
+    product_type: string;
+    slug: string;
+    model: string;
+    controller: string;
+    memory: string;
+    condition: string;
+    long_description?: string;
+    description: string;
+    technical_specs?: { label: string; value: string }[];
+    modelDes?: string;
+    controllerDes?: string;
+    memoryDes?: string;
+    conditionDes?: string;
+    ratings?: number;
+  };
+  meta: {
+    models?: { model: string; price: number }[];
+    memoryOptions?: { capacity: string; price: number }[];
+  };
 }
+
+// ===================================================================
+// 1. FUNZIONI DI UTILITÀ PER CLASSI DINAMICHE
+//    Necessarie per la logica UI dinamica basata su productType.
+// ===================================================================
+
+/**
+ * Determina il tema del prodotto (colore principale)
+ */
+const getProductTheme = (productType: string | undefined): string => {
+  if (!productType) return "white";
+  const lowerType = productType.toLowerCase();
+  if (lowerType.includes("playstation")) return "playstation";
+  if (lowerType.includes("xbox")) return "xbox";
+  if (lowerType.includes("nintendo")) return "nintendo";
+  return "white";
+};
+
+/**
+ * Restituisce le classi per il colore (tipicamente testo o bordo) degli elementi selezionati.
+ * @param productType Tipo di console
+ * @param baseClasses Classi di base (es. "bg-white border-transparent" per lo sfondo attivo)
+ * @param activeClasses (Non usato nel tuo JSX, lasciato per completezza)
+ * @param inactiveClasses (Non usato nel tuo JSX, lasciato per completezza)
+ * @param nintendoContrastClasses (Usato solo nel check Trade-In)
+ */
+const getConsoleColorClasses = (
+  productType: string,
+  baseClasses: string,
+  activeClasses: string,
+  inactiveClasses: string,
+  nintendoContrastClasses: string = ""
+): string => {
+  const isSelectedStyle =
+    productType === "xbox"
+      ? "text-[#3BAE3B] border-transparent" // Verde Xbox
+      : productType === "playstation"
+      ? "text-[#1861C0] border-transparent" // Blu Playstation
+      : productType === "nintendo"
+      ? "text-[#DB2220] border-transparent" // Rosso Nintendo
+      : "";
+
+  return `${baseClasses} ${isSelectedStyle} ${nintendoContrastClasses}`;
+};
+
+/**
+ * Restituisce le classi per lo sfondo/bordo degli elementi NON selezionati
+ * e le classi di sfondo per il banner sticky.
+ * @param productType Tipo di console
+ * @param baseClasses Classi di base (es. "text-[#FDFDFD] bg-transparent")
+ * @param activeClasses Classi da applicare se SELEZIONATO (vuoto nel tuo JSX)
+ * @param inactiveClasses Classi da applicare se NON SELEZIONATO (es. "border-[#FDFDFD]")
+ */
+const getConsoleBgClasses = (
+  productType: string,
+  baseClasses: string,
+  activeClasses: string,
+  inactiveClasses: string
+): string => {
+  const bgColor =
+    productType === "xbox"
+      ? "bg-[#46aa48]"
+      : productType === "playstation"
+      ? "bg-[#003caa]"
+      : productType === "nintendo"
+      ? "bg-[#db2220]"
+      : "bg-gray-500"; // Fallback
+
+  // Questa funzione è usata anche per gli sfondi del banner sticky, dove `activeClasses` e `inactiveClasses` non servono
+  if (activeClasses === "bg-opacity-100" && inactiveClasses === "") {
+    return bgColor;
+  }
+
+  // Stili per pulsanti NON selezionati (testo e bordo bianco su sfondo colore console)
+  return `${baseClasses} ${inactiveClasses} ${
+    activeClasses && inactiveClasses === "border-[#FDFDFD]"
+      ? `${bgColor} border-transparent` // Attivo (quando riceve baseClasses="text-white" in Desktop)
+      : baseClasses // Non Attivo (nel mobile viene passato "text-[#FDFDFD] border-[#FDFDFD] bg-transparent")
+  }`;
+};
 
 const ProductDetailsPage: React.FC = () => {
   // ===================================================================
-  // 1. STATI E SELETTORI REDUX
+  // 2. STATI LOCALI E SELETTORI REDUX
   // ===================================================================
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedController, setSelectedController] = useState<string>("0");
   const [selectedMemory, setSelectedMemory] = useState<string>("");
   const [selectedCondition, setSelectedCondition] = useState<string>("");
-  const [openAccordion, setOpenAccordion] = useState<string>("");
 
   const dispatch = useDispatch();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isOpenTradeIn, setIsOpenTradeIn] = useState(false);
+  const params = useParams();
+  const slug = params.slug as string | undefined;
+  const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+  // Selettori Redux
   const modalTradeInData: ModalTradeInData | null = useSelector(
     (state: RootState) =>
       state?.modalTradeInDataSlice?.modalTradeInData as ModalTradeInData | null
   );
+  const isTradeInActive: boolean = useSelector(
+    (state: RootState) => state.showTradeInData.isTradeInActive
+  );
+  const tradeInDiscount: number = useSelector(
+    (state: RootState) => state.showTradeInData.tradeInFinalValue
+  );
+  const isModalOpen: boolean = useSelector(
+    (state: RootState) => state.modal.modal
+  );
 
   // ===================================================================
-  // 2. DATI E HOOK DI NEXT.JS/RTK QUERY
+  // 3. DATI E HOOK DI RTK QUERY
   // ===================================================================
-
-  const params = useParams();
-  const [slug, setSlug] = useState(params.slug);
-  const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const {
     data: singleProduct,
     isLoading,
     isError,
-  } = useGetSingleProductQuery({
-    slug: slug as string | undefined,
-  });
+  } = useGetSingleProductQuery({ slug });
 
-  const { data: slugRes } = useFindSlugProductQuery({
-    productName: singleProduct?.data?.product?.name,
-    condition: selectedCondition,
-    controller: selectedController,
-    memory: selectedMemory,
-    model: selectedModel,
-  });
+  const { data: slugRes } = useFindSlugProductQuery(
+    {
+      productName: singleProduct?.data?.product?.name,
+      condition: selectedCondition,
+      controller: selectedController,
+      memory: selectedMemory,
+      model: selectedModel,
+    },
+    { skip: !singleProduct?.data?.product?.name }
+  );
 
   // ===================================================================
-  // 3. EFFECT E INIZIALIZZAZIONE
+  // 4. EFFECT E INIZIALIZZAZIONE
   // ===================================================================
 
   useEffect(() => {
+    // Reindirizzamento se la configurazione selezionata porta a uno slug diverso
     if (!singleProduct?.data?.product?.slug || !slugRes?.data?.slug) return;
 
-    // Rimosso { shallow: true } come richiesto per l'App Router
     if (singleProduct?.data?.product?.slug !== slugRes?.data?.slug) {
-      setSlug(slugRes?.data?.slug);
-      router.replace(slugRes?.data?.slug);
+      router.replace(`/buy/${slugRes.data.slug}`);
     }
-  }, [slugRes, router, singleProduct?.data?.product?.slug]);
+  }, [slugRes?.data?.slug, router, singleProduct?.data?.product?.slug]);
 
   useEffect(() => {
+    // Inizializza gli stati locali con i valori del prodotto corrente
     if (singleProduct?.data?.product) {
       setSelectedModel(singleProduct.data.product.model || "");
       setSelectedController(singleProduct.data.product.controller || "0");
@@ -99,36 +214,15 @@ const ProductDetailsPage: React.FC = () => {
     );
   if (isError || !singleProduct?.data)
     return <div>Errore: Prodotto non trovato!</div>;
-  // ===================================================================
-  // 4. FUNZIONI DI UTILITY E BUSINESS LOGIC
-  // ===================================================================
 
-  type CardTheme = "gray" | "white" | "playstation" | "xbox" | "nintendo";
-
-  const getProductTheme = (productType: string | undefined): CardTheme => {
-    if (!productType) return "white";
-
-    const lowerType = productType.toLowerCase();
-
-    if (lowerType.includes("playstation")) {
-      return "playstation";
-    }
-    if (lowerType.includes("xbox")) {
-      return "xbox";
-    }
-    if (lowerType.includes("nintendo")) {
-      return "nintendo";
-    }
-
-    return "white";
-  };
-
-  const product = singleProduct.data;
+  const product = singleProduct.data as ProductData;
   const productType = product.product?.product_type as string;
-  const basePrice = product.product?.offer_price || 0;
 
-  const productTheme = getProductTheme(productType);
+  // ===================================================================
+  // 5. LOGICA BUSINESS (COSTANTI E FUNZIONI)
+  // ===================================================================
 
+  // --- Costanti per le opzioni ---
   const baseControllerCost =
     productType === "xbox" ? 30 : productType === "playstation" ? 40 : 0;
 
@@ -143,19 +237,21 @@ const ProductDetailsPage: React.FC = () => {
       label: "NOT BAD",
       value: "accettabile",
       price: 0,
-      description: "Dispositivo in condizioni accettabili.",
+      description:
+        "La console presenta segni di usura, ma è perfettamente funzionante.",
     },
     {
       label: "GOOD",
       value: "eccellente",
       price: 30,
-      description: "Dispositivo in ottime condizioni.",
+      description:
+        "La console è in ottime condizioni, con minimi segni di utilizzo.",
     },
     {
       label: "BRAND NEW",
       value: "new",
       price: 70,
-      description: "Dispositivo pari al nuovo, nessun segno di usura.",
+      description: "Come nuova, con scatola originale e accessori intatti.",
     },
   ];
 
@@ -164,30 +260,76 @@ const ProductDetailsPage: React.FC = () => {
     { label: "NO", value: "NO" },
   ];
 
-  const handleOpenModal = () => {
-    dispatch(toggleModal()); // Usa Redux per aprire la modale
-    setIsModalOpen(true); // (opzionale: puoi rimuovere questo stato locale se non serve altrove)
-  };
-  const handleCloseModal = () => {
-    dispatch(toggleModal()); // Chiudi la modale Redux
-    setIsModalOpen(false);
+  /**
+   * Calcola il prezzo base del prodotto più tutti gli extra selezionati.
+   */
+  const calculateTotalPrice = () => {
+    let total = Number(product.product?.offer_price) || 0;
+
+    const model = product.meta?.models?.find(
+      (m: any) => m.model === selectedModel
+    );
+    total += Number(model?.price ?? 0);
+
+    const memory = product.meta?.memoryOptions?.find(
+      (m: any) => m.capacity === selectedMemory
+    );
+    total += Number(memory?.price ?? 0);
+
+    const controller = CONTROLLER_OPTIONS.find(
+      (c) => String(c.count) === selectedController
+    );
+    total += Number(controller?.extraCost ?? 0);
+
+    const condition = CONDITION_OPTIONS.find(
+      (c) => c.value === selectedCondition
+    );
+    total += Number(condition?.price ?? 0);
+
+    return total;
   };
 
-  const handleCompleteTradeIn = (tradeInData: any) => {
-    // Salva i dati se serve
-    setIsModalOpen(false);
-    setIsOpenTradeIn(true);
+  const currentTotalPrice = calculateTotalPrice();
+
+  // Calcolo del prezzo finale DOPO la permuta
+  const finalPriceAfterTrade =
+    isTradeInActive && tradeInDiscount > 0
+      ? currentTotalPrice - tradeInDiscount
+      : currentTotalPrice;
+
+  /**
+   * Gestisce la selezione "SI" o "NO" per l'opzione Permuta.
+   */
+  const handleTradeInSelection = (value: "SI" | "NO") => {
+    if (value === "SI") {
+      dispatch(openModal());
+    } else {
+      dispatch(resetTradeInValuation());
+      dispatch(clearTradeInItemDetails());
+      if (isModalOpen) {
+        dispatch(toggleModal());
+      }
+      toast.success("Offerta Trade-In rimossa.");
+    }
   };
 
+  /**
+   * Aggiunge il prodotto corrente (con la sua configurazione e trade-in) al carrello.
+   */
   const handleAddToCart = () => {
-    dispatch(modifiedCart({}));
+    dispatch(modifiedCart({})); // Traccia l'aggiornamento del carrello
 
     const existingCart = JSON.parse(localStorage?.getItem("cart") || "[]");
 
     const newProduct = {
-      productId: product?.product?._id,
+      productId: product.product?._id,
       quantity: 1,
-      tradeIn: modalTradeInData || null,
+      tradeIn: isTradeInActive
+        ? {
+            productName: modalTradeInData?.productName,
+            productPrice: tradeInDiscount,
+          }
+        : null,
       model: selectedModel,
       controller: selectedController,
       memory: selectedMemory,
@@ -204,14 +346,16 @@ const ProductDetailsPage: React.FC = () => {
       condition: string;
     }
 
-    // Controlla se il prodotto esiste già con la *stessa configurazione*
+    // Controlla se esiste già nel carrello un prodotto con la STESSA CONFIGURAZIONE
     const isDuplicate: boolean = existingCart.some(
       (item: CartItem) =>
         item.productId === newProduct.productId &&
         item.model === newProduct.model &&
         item.controller === newProduct.controller &&
         item.memory === newProduct.memory &&
-        item.condition === newProduct.condition
+        item.condition === newProduct.condition &&
+        // Controlla anche se lo stato Trade-In è lo stesso
+        isTradeInActive === !!item.tradeIn
     );
 
     if (isDuplicate) {
@@ -221,7 +365,8 @@ const ProductDetailsPage: React.FC = () => {
           item.model === newProduct.model &&
           item.controller === newProduct.controller &&
           item.memory === newProduct.memory &&
-          item.condition === newProduct.condition
+          item.condition === newProduct.condition &&
+          isTradeInActive === !!item.tradeIn
         ) {
           return {
             ...item,
@@ -240,61 +385,18 @@ const ProductDetailsPage: React.FC = () => {
     router.push("/cart");
   };
 
-  // FUNZIONE DI UTILITY PER GENERARE CLASSI DINAMICHE
-  const getConsoleColorClasses = (
-    baseClasses: string,
-    activeClasses: string,
-    inactiveClasses: string,
-    nintendoContrastClasses: string = ""
-  ) => {
-    let activeColorClass = "";
-    let inactiveColorClass = "";
+  // ===================================================================
+  // 6. RENDERIZZAZIONE DEL COMPONENTE (Mobile UI)
+  // ===================================================================
 
-    if (productType === "xbox") {
-      activeColorClass = "text-[#3BAE3B]";
-      inactiveColorClass = "border-[#3BAE3B]";
-    } else if (productType === "playstation") {
-      activeColorClass = "text-[#1861C0]";
-      inactiveColorClass = "border-[#1861C0]";
-    } else if (productType === "nintendo") {
-      activeColorClass = "text-[#D61D1E]";
-      inactiveColorClass = nintendoContrastClasses || "border-[#D61D1E]";
-    } else {
-      // Fallback
-      activeColorClass = "text-gray-900";
-      inactiveColorClass = "border-gray-500";
-    }
+  const mainImage = product.product?.images?.[0];
+  const cleanImagePath = mainImage?.startsWith("/")
+    ? mainImage.substring(1)
+    : mainImage;
+  const productTheme = getProductTheme(productType);
 
-    return `${baseClasses} ${activeClasses} ${activeColorClass} ${inactiveClasses} ${inactiveColorClass}`;
-  };
-
-  // FUNZIONE DI UTILITY PER OTTENERE LE CLASSI PER LO SFONDO (es. Trade-In NO)
-  const getConsoleBgClasses = (
-    baseClasses: string,
-    activeClasses: string,
-    inactiveClasses: string
-  ) => {
-    let activeBgClass = "";
-    let inactiveBgClass = "";
-
-    if (productType === "xbox") {
-      activeBgClass = "bg-[#3BAE3B]";
-    } else if (productType === "playstation") {
-      activeBgClass = "bg-[#1861C0]";
-    } else if (productType === "nintendo") {
-      activeBgClass = "bg-[#D61D1E]";
-    } else {
-      activeBgClass = "bg-gray-500";
-    }
-
-    return `${baseClasses} ${activeClasses} ${activeBgClass} ${inactiveClasses} ${inactiveBgClass}`;
-  };
-
-  // ------------------------------------------------------------------
-  // LOGICA PER IL PREZZO FINALE DOPO LA PERMUTA
-  // ------------------------------------------------------------------
-  const tradeInValue = modalTradeInData?.productPrice || 0;
-  const finalPriceAfterTrade = Math.max(0, basePrice - tradeInValue);
+  // NOTA: La vista Desktop (md:block) è omessa qui per rispettare
+  // l'ambito della tua richiesta, che ha fornito solo la vista mobile.
 
   return (
     <div>
@@ -309,18 +411,20 @@ const ProductDetailsPage: React.FC = () => {
           productType === "nintendo" && "bg-[url(/sell/nintendo.jpeg)]"
         } bg-cover bg-no-repeat`}>
         <div className="w-full h-[426px]">
-          <Image
-            src={`${API_URL}${product.product?.images[0]}`}
-            className="w-full h-[426px] aspect-square"
-            width={800}
-            height={800}
-            alt={product.product?.name || "Prodotto"}
-          />
+          {mainImage && (
+            <Image
+              src={`${API_URL}/${cleanImagePath}`}
+              alt={product.product?.name || "Prodotto"}
+              className="w-full h-[426px] aspect-square"
+              width={800}
+              height={800}
+              style={{ objectFit: "contain" }}
+            />
+          )}
         </div>
         <div>
           {/* Blocchetto Recensioni */}
           <div className="pt-6 mx-5 pb-2.5 border-b-2 border-gray-300">
-            {/* ... codice recensioni invariato ... */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <p className="text-[#FDFDFD] text-lg font-medium">Recensioni</p>
@@ -360,12 +464,12 @@ const ProductDetailsPage: React.FC = () => {
             </div>
           </div>
           <div
-            // Usando productType per il colore dinamico dello sfondo
+            // Stile del banner sticky: colore di sfondo dinamico
             className={`pt-6 px-5 sticky -top-10 left-0 right-0 z-10 
               ${productType === "xbox" && "bg-[#46aa48]"}
               ${productType === "playstation" && "bg-[#003caa]"}
               ${productType === "nintendo" && "bg-[#db2220]"}
-          `}>
+            `}>
             <div className="pt-5 pb-2 border-b-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-col gap-3">
@@ -375,13 +479,9 @@ const ProductDetailsPage: React.FC = () => {
                   <h3 className="text-base text-[#FDFDFD]">
                     {(() => {
                       const mobileParts = [];
-
-                      // Modello (Presumiamo che selectedModel non sia mai vuoto/brutto, ma lo filtriamo per sicurezza)
                       if (selectedModel && selectedModel !== "-") {
                         mobileParts.push(selectedModel);
                       }
-
-                      // Controller
                       if (
                         selectedController &&
                         selectedController !== "0" &&
@@ -389,17 +489,12 @@ const ProductDetailsPage: React.FC = () => {
                       ) {
                         mobileParts.push(`${selectedController} Contr.`);
                       }
-
-                      // Memoria
                       if (selectedMemory && selectedMemory !== "-") {
                         mobileParts.push(selectedMemory);
                       }
-
-                      // Condizione
                       if (selectedCondition && selectedCondition !== "-") {
                         mobileParts.push(selectedCondition);
                       }
-
                       return mobileParts.join(" | ");
                     })()}
                   </h3>
@@ -407,68 +502,71 @@ const ProductDetailsPage: React.FC = () => {
 
                 <h2 className="text-[36px] font-semibold text-[#FDFDFD]">
                   &euro;
-                  {/* Nota: è necessario implementare la logica per calcolare il prezzo totale (prezzo base + extraCost) */}
-                  {product.product?.offer_price}
+                  {/* Prezzo base totale (senza sconto Trade-In mostrato nel banner iniziale) */}
+                  {(calculateTotalPrice() || 0).toFixed(2)}
                 </h2>
               </div>
             </div>
           </div>
 
-          {/*
-          // SEZIONE NINTENDO COLORE - Commentata nel codice originale, lasciata così.
-          */}
+          {/* SEZIONE XBOX: Selezione del Modello */}
+          {productType === "xbox" &&
+            product.meta?.models &&
+            product.meta.models.length > 1 && (
+              <div className="px-5">
+                <div className="flex items-center justify-center pt-8 space-x-2.5">
+                  <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
+                  <h2
+                    className={
+                      "bg-[#FDFDFD] py-2 px-6 rounded-lg shadow-md text-[#101010] text-base font-medium text-center whitespace-nowrap"
+                    }>
+                    Seleziona il modello di {product.product?.name}
+                  </h2>
+                  <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
+                </div>
 
-          {/*
-          // SEZIONE XBOX: Selezione del Modello
-          */}
-          {productType === "xbox" && product.meta?.models?.length > 1 && (
-            <div className="px-5">
-              <div className="flex items-center justify-center pt-8 space-x-2.5">
-                <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
-                <h2
-                  className={
-                    "bg-[#FDFDFD] py-2 px-6 rounded-lg shadow-md text-[#101010] text-base font-medium text-center whitespace-nowrap"
-                  }>
-                  Seleziona il modello di {product.product?.name}
-                </h2>
-                <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 px-5 py-4">
-                {product.meta.models?.map(
-                  ({ model, price }: Record<string, any>) => (
-                    <div
-                      key={model}
-                      onClick={() => {
-                        setSelectedModel(model);
-                      }}
-                      className={`
+                <div className="grid grid-cols-1 gap-4 px-5 py-4">
+                  {product.meta.models?.map(
+                    ({ model, price }: Record<string, any>) => (
+                      <div
+                        key={model}
+                        onClick={() => {
+                          setSelectedModel(model);
+                        }}
+                        className={`
                         text-lg border-4 font-semibold py-3 text-center 
                         flex items-center justify-center rounded-md cursor-pointer
                         ${
                           selectedModel === model
-                            ? `text-[#3BAE3B] bg-[#FDFDFD] border-transparent`
-                            : "text-[#FDFDFD] bg-transparent border-[#FDFDFD]"
+                            ? // Selezionato: sfondo bianco, testo colore console
+                              getConsoleColorClasses(
+                                productType,
+                                "bg-[#FDFDFD] border-transparent",
+                                "",
+                                "",
+                                ""
+                              )
+                            : "text-[#FDFDFD] bg-transparent border-[#FDFDFD]" // Non selezionato: testo/bordo bianco, sfondo trasparente
                         }
-                      `}>
-                      <span className="overflow-hidden">{model}</span>
-                    </div>
-                  )
-                )}
-              </div>
+                    `}>
+                        <span className="overflow-hidden">{model}</span>
+                      </div>
+                    )
+                  )}
+                </div>
 
-              <div className="px-5 pb-4">
-                <p className="text-[#FDFDFD] text-sm">
-                  {singleProduct?.data?.product?.modelDes}
-                </p>
+                <div className="px-5 pb-4">
+                  <p className="text-[#FDFDFD] text-sm">
+                    {singleProduct?.data?.product?.modelDes}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-          {/*
-          // SEZIONE PLAYSTATION: Selezione della Versione
-          */}
+            )}
+
+          {/* SEZIONE PLAYSTATION: Selezione della Versione */}
           {productType === "playstation" &&
-            product.meta?.models?.length > 1 && (
+            product.meta?.models &&
+            product.meta.models.length > 1 && (
               <div className="px-5">
                 <div className="flex items-center justify-center pt-8 space-x-2.5">
                   <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
@@ -494,10 +592,17 @@ const ProductDetailsPage: React.FC = () => {
                           flex flex-col items-center justify-center rounded-lg cursor-pointer
                           ${
                             selectedModel === model
-                              ? `text-[#1861C0] bg-[#FDFDFD] border-transparent`
-                              : "text-[#FDFDFD] bg-transparent border-[#FDFDFD]"
+                              ? // Selezionato: sfondo bianco, testo colore console
+                                getConsoleColorClasses(
+                                  productType,
+                                  "bg-[#FDFDFD] border-transparent",
+                                  "",
+                                  "",
+                                  ""
+                                )
+                              : "text-[#FDFDFD] bg-transparent border-[#FDFDFD]" // Non selezionato: testo/bordo bianco, sfondo trasparente
                           }
-                        `}>
+                      `}>
                         <span className="overflow-hidden">{model}</span>
                       </div>
                     )
@@ -512,9 +617,7 @@ const ProductDetailsPage: React.FC = () => {
               </div>
             )}
 
-          {/*
-          // SEZIONE CONTROLLER (Quantità) - RIUSO DI getConsoleColorClasses
-          */}
+          {/* SEZIONE CONTROLLER (Quantità) */}
           {(productType === "playstation" || productType === "xbox") && (
             <div className="px-5">
               <div className="flex items-center justify-center pt-8 space-x-2.5">
@@ -542,17 +645,21 @@ const ProductDetailsPage: React.FC = () => {
                         ${
                           isSelected
                             ? getConsoleColorClasses(
-                                "bg-white border-transparent",
+                                productType,
+                                "bg-white border-transparent", // Base: sfondo bianco
+                                "",
                                 "",
                                 ""
                               )
                             : getConsoleColorClasses(
-                                "text-[#FDFDFD] bg-transparent",
-                                "border-white",
-                                ""
+                                productType,
+                                "text-[#FDFDFD] bg-transparent", // Base: testo bianco, sfondo trasparente
+                                "",
+                                "",
+                                "border-white" // Bordo bianco per i non selezionati
                               )
                         }
-                      `}>
+                    `}>
                       <span className="text-3xl overflow-hidden">{count}</span>
                     </div>
                   );
@@ -568,78 +675,81 @@ const ProductDetailsPage: React.FC = () => {
               </div>
             </div>
           )}
-          {/*
-          // SEZIONE MEMORIA / GB (Capacità) - RIUSO DI getConsoleColorClasses
-          */}
-          {product.meta?.memoryOptions?.length > 1 && ( // Modificato da 'memory' a 'memoryOptions' per coerenza
-            <div className="px-5">
-              <div className="flex items-center justify-center pt-8 space-x-2.5">
-                <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
-                <h2
-                  className={
-                    "bg-[#FDFDFD] py-2 px-6 rounded-lg shadow-md text-[#101010] text-base font-medium text-center whitespace-wrap"
-                  }>
-                  Memoria di archiviazione
-                </h2>
-                <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
-              </div>
 
-              <div className="grid grid-cols-2 gap-5 py-4">
-                {product.meta.memoryOptions.map(
-                  ({ capacity, price }: Record<string, any>) => {
-                    const isSelected = selectedMemory === capacity;
-                    return (
-                      <div
-                        key={capacity}
-                        onClick={() => {
-                          setSelectedMemory(capacity);
-                        }}
-                        className={`
+          {/* SEZIONE MEMORIA / GB (Capacità) */}
+          {product.meta?.memoryOptions &&
+            product.meta.memoryOptions.length > 1 && (
+              <div className="px-5">
+                <div className="flex items-center justify-center pt-8 space-x-2.5">
+                  <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
+                  <h2
+                    className={
+                      "bg-[#FDFDFD] py-2 px-6 rounded-lg shadow-md text-[#101010] text-base font-medium text-center whitespace-wrap"
+                    }>
+                    Memoria di archiviazione
+                  </h2>
+                  <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-5 py-4">
+                  {product.meta.memoryOptions.map(
+                    ({ capacity, price }: Record<string, any>) => {
+                      const isSelected = selectedMemory === capacity;
+                      return (
+                        <div
+                          key={capacity}
+                          onClick={() => {
+                            setSelectedMemory(capacity);
+                          }}
+                          className={`
                           text-xl border-4 font-bold py-12 text-center 
                           flex flex-col items-center justify-center rounded-lg cursor-pointer
                           ${
                             isSelected
                               ? getConsoleColorClasses(
+                                  productType,
                                   "bg-white border-transparent",
+                                  "",
                                   "",
                                   ""
                                 )
                               : getConsoleColorClasses(
+                                  productType,
                                   "text-[#FDFDFD] bg-transparent",
-                                  "border-[#FDFDFD]", // Bordo bianco per le non selezionate
-                                  ""
+                                  "",
+                                  "",
+                                  "border-[#FDFDFD]" // Bordo bianco per i non selezionati
                                 )
                           }
-                        `}>
-                        {isSelected ? (
-                          <Check className={isSelected ? `h-8 w-8` : ""} />
-                        ) : (
-                          <>
-                            <span className="text-2xl overflow-hidden">
-                              {capacity}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    );
-                  }
-                )}
-              </div>
+                      `}>
+                          {isSelected ? (
+                            <Check className={`h-8 w-8`} />
+                          ) : (
+                            <>
+                              <span className="text-2xl overflow-hidden">
+                                {capacity}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
 
-              <div className="px-5 pb-4">
-                <p className="text-[#FDFDFD] text-sm">
-                  <span className="font-bold">
-                    {productType === "xbox" ? "Xbox One:" : "Memoria:"}
-                  </span>
-                  La capacità di archiviazione determina quanti giochi e dati
-                  possono essere salvati sulla console.
-                </p>
+                <div className="px-5 pb-4">
+                  <p className="text-[#FDFDFD] text-sm">
+                    <span className="font-bold">
+                      {productType === "xbox" ? "Xbox One:" : "Memoria:"}
+                    </span>
+                    La capacità di archiviazione determina quanti giochi e dati
+                    possono essere salvati sulla console.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-          {/*
-          // SEZIONE CONDIZIONI (Stato del Prodotto) - RIUSO DI getConsoleBgClasses
-          */}
+            )}
+
+          {/* SEZIONE CONDIZIONI (Stato del Prodotto) */}
           <div className="px-5">
             <div className="flex items-center justify-center pt-8 space-x-2.5">
               <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
@@ -666,17 +776,20 @@ const ProductDetailsPage: React.FC = () => {
                       ${
                         isSelected
                           ? getConsoleColorClasses(
+                              productType,
                               "bg-white border-transparent",
+                              "",
                               "",
                               ""
                             )
                           : getConsoleBgClasses(
+                              productType,
                               "text-[#FDFDFD] border-[#FDFDFD] bg-transparent", // Non selezionato: testo bianco, bordo bianco
                               "",
                               ""
                             )
                       }
-                    `}>
+                  `}>
                     <span className="text-lg overflow-hidden whitespace-nowrap">
                       {label}
                     </span>
@@ -703,9 +816,7 @@ const ProductDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          {/*
-          // SEZIONE PERMUTA (Trade-In)
-          */}
+          {/* SEZIONE PERMUTA (Trade-In) */}
           <div className="mb-6 px-5 pt-5">
             <div className="flex items-center justify-center pt-8 space-x-2.5">
               <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
@@ -717,134 +828,95 @@ const ProductDetailsPage: React.FC = () => {
               </h2>
               <hr className="flex-1 border-b-2 border-[#B5B5B5]" />
             </div>
-
             <div className="grid grid-cols-2 gap-5 py-4">
               {TRADE_IN_OPTIONS.map(({ label, value }) => {
-                // Lo stato selezionato è true se 'SI' è selezionato E la permuta è aperta (o dati presenti)
-                // O se 'NO' è selezionato E la permuta è chiusa (o dati non presenti).
                 const isSelected =
-                  (value === "SI" && isOpenTradeIn) ||
-                  (value === "NO" && !isOpenTradeIn);
+                  (value === "SI" && isTradeInActive) ||
+                  (value === "NO" && !isTradeInActive);
 
                 return (
                   <div
                     key={value}
-                    onClick={() => {
-                      if (value === "SI") {
-                        handleOpenModal(); // Apre/Chiude il modale
-                      } else if (isOpenTradeIn) {
-                        // Selezionando NO, chiudi e resetta se era attivo
-                        handleCloseModal();
-                        // Se necessario, aggiungi qui l'azione per resettare il valore della permuta
-                      }
-                    }}
+                    onClick={() => handleTradeInSelection(value as "SI" | "NO")}
                     className={`
                       text-3xl border-4 font-bold py-12 text-center 
                       flex flex-col items-center justify-center rounded-lg cursor-pointer
                       ${
                         isSelected
                           ? getConsoleColorClasses(
+                              productType,
                               "bg-white border-transparent",
+                              "",
                               "",
                               ""
                             )
                           : getConsoleBgClasses(
+                              productType,
                               "text-[#FDFDFD] border-[#FDFDFD] bg-transparent",
                               "",
                               ""
                             )
                       }
-                    `}>
+                  `}>
                     <span>{label}</span>
                   </div>
                 );
               })}
             </div>
 
-            <div className="px-5 pb-4">
-              <p className="text-[#FDFDFD] text-sm">
-                <span className="font-bold">Trade-in price:</span> Il prezzo
-                trade-in mette in evidenza quanto risparmierai se con l'acquisto
-                di una console ci invierai il tuo vecchio dispositivo.
-              </p>
-            </div>
-
-            {/* ------------------------------------------------------------------ */}
-            {/* NUOVA SEZIONE: Prezzo Dopo Permuta (Visibile solo se permuta attiva E dati presenti) */}
-            {/* ------------------------------------------------------------------ */}
-            {isOpenTradeIn && modalTradeInData && (
-              <div
-                // Il contenitore del contenuto Trade-In deve avere il colore della console come sfondo.
-                className="p-4 rounded-lg  space-y-4 ">
+            {/* SEZIONE: Prezzo Dopo Permuta (Visibile solo se permuta attiva E sconto presente) */}
+            {isTradeInActive && tradeInDiscount > 0 && (
+              <div className="p-4 rounded-lg space-y-4">
                 <h3 className="text-[#FDFDFD] text-lg font-semibold">
-                  After trade-in price
+                  Prezzo dopo permuta
                 </h3>
 
-                {/* 1. Valore del dispositivo valutato (SFONDO BIANCO) */}
                 <div className="flex items-center justify-between p-4 bg-[#FDFDFD] rounded-lg shadow-md">
                   <p className="text-[#101010] font-medium">
                     Abbiamo valutato il tuo dispositivo:
                   </p>
                   <p className="text-[#101010] font-bold">
-                    &euro;{tradeInValue.toFixed(2)}
+                    &euro;{tradeInDiscount.toFixed(2)}
                   </p>
                 </div>
 
-                {/* 2. Prezzo Finale del Prodotto (SFONDO BIANCO) */}
                 <div className="p-4 rounded-lg shadow-xl bg-[#FDFDFD]">
                   <div className="flex items-start justify-between">
                     <p className="text-[#101010] text-xl font-bold">
-                      {modalTradeInData.productName}
+                      {product.product?.name}
                     </p>
                     <div className="text-right">
-                      {/* Prezzo Originale Barrato */}
                       <p className="text-[#101010] text-lg line-through opacity-70">
-                        &euro;{basePrice.toFixed(2)}
+                        &euro;{calculateTotalPrice().toFixed(2)}
                       </p>
                     </div>
                   </div>
 
                   <div className="pt-1 flex items-center justify-between">
                     <p className="text-[#101010] text-base">
-                      {/* Qui dovrai inserire i dettagli del prodotto in permuta, se li hai salvati nello stato. */}
-                      {/* Esempio nello screenshot: "Lite | Turchese" */}
-                      {/* Assumendo che 'product' sia il prodotto *acquistato*, non quello permutato: */}
                       {selectedModel} | {selectedCondition}
                     </p>
 
-                    {/* Prezzo Finale in Arancione */}
                     <p className="text-orange-500 text-[36px] font-extrabold leading-none">
                       &euro;{finalPriceAfterTrade.toFixed(2)}
                     </p>
                   </div>
                 </div>
-
-                {/* Il bottone Aggiungi al Carrello fa parte del layout principale, ma se volessi includerlo qui con lo sfondo colorato: */}
-                {/* <button
-              onClick={handleAddToCart}
-              className="bg-orange-500 hover:bg-orange-600 w-full text-[#FDFDFD] font-semibold h-12 rounded-lg mt-4">
-              AGGIUNGI AL CARRELLO
-            </button> */}
               </div>
             )}
-            {/* ------------------------------------------------------------------ */}
-
             {isModalOpen && <ConsoleModal />}
           </div>
         </div>
         {/* submit button */}
-        <div className="sticky bottom-0 z-50 p-2.5 ">
+        <div className="sticky bottom-0 z-10 p-2.5 ">
           <button
             onClick={handleAddToCart}
             className="bg-orange-500 hover:bg-orange-600 w-full text-[#FDFDFD] font-semibold h-12 rounded-lg">
             Aggiungi al carrello
           </button>
         </div>
-        {/* ------------------------------------------------------------------ */}
         {/* NUOVA SEZIONE: Vantaggi e Pagamento a Rate */}
-        {/* ------------------------------------------------------------------ */}
-        <TrustSection className="px-5 py-4" innerBlockBgClass="bg-[#FDFDFD]" />{" "}
-        {/* ------------------------------------------------------------------ */}
+        <TrustSection className="px-5 py-4" innerBlockBgClass="bg-[#FDFDFD]" />
         {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
         <div className="px-5 pb-8 mt-6">
           <Accordion
@@ -863,7 +935,7 @@ const ProductDetailsPage: React.FC = () => {
           />
         </div>
         <div className="mt-6">
-          <ReviewCarousel productName={product.name} theme={productTheme} />
+          <ReviewCarousel productName={product.product.name} theme="white" />
         </div>
       </div>
     </div>

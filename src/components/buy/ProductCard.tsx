@@ -16,6 +16,7 @@ interface ProductData {
   product_type: string;
   memory: string;
   controller: number;
+  slug: any;
 }
 
 interface ProductCardProps {
@@ -30,6 +31,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   handleAddToCart,
   product,
 }) => {
+  const productUrl = `/buy/${product?.slug}`;
+
   const { t } = useTranslation();
 
   const shortDesc = product.description_short?.split("|").map((d) => d.trim());
@@ -46,11 +49,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
-  const imageUrl =
-    product.images && product.images.length > 0
-      ? `${API_URL}${product.images[0]}`
-      : "/placeholder-default.svg";
-
   const cardClasses = `
     bg-white rounded-xl shadow-md p-3 flex 
     ${product.quantity === 0 ? "opacity-100" : "opacity-70"}
@@ -63,7 +61,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const originalPrice = product.price ? `€${product.price.toFixed(2)}` : null;
 
   return (
-    <Link href={`/product/${product._id}`} className={cardClasses}>
+    <Link href={productUrl} className={cardClasses}>
       {/* Blocco Immagine */}
       <div className="w-1/3 min-w-[100px] flex-shrink-0 relative overflow-hidden rounded-lg bg-gray-100 mr-4 aspect-square">
         <img
