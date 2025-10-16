@@ -1,19 +1,37 @@
+// app/pages/ProductPage.tsx (Componente Completo Aggiornato)
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  Truck,
+  RefreshCw,
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  Plus,
+  Minus,
+} from "lucide-react";
+
 import Container from "@/components/common/Container";
 import { useTranslation } from "react-i18next";
+// Assicurati che il path sia corretto per la tua implementazione Redux/API
 import { useGetAllProductsQuery } from "@/redux/features/products/ProductAPI";
-import Loading from "@/app/loading";
-import ProductCard from "@/components/product/ProductCard";
+import Loading from "@/app/loading"; // Assicurati che il path sia corretto
+import ProductCard from "@/components/buy/ProductCard"; // Importazione default (come nel tuo file fornito)
+import ProductSidebar from "@/components/buy/ProductSidebar";
+import MobileHeader from "@/components/buy/MobileHeader";
+import CartReviewGrid from "@/components/share/review-carousel/CartReviewCarousel";
 
 const ProductPage: React.FC = () => {
+  // === STATI PRINCIPALI ===
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [filterView, setFilterView] = useState(false);
-  const { t } = useTranslation();
+  const [filterView, setFilterView] = useState(false); // Controlla l'overlay filtri mobile
+  const { t } = useTranslation(); // === STATI FILTRI ===
 
   const [searchProduct, setSearchProduct] = useState<string>("");
   const [brandSearch, setBrandSearch] = useState<string>("");
@@ -21,10 +39,10 @@ const ProductPage: React.FC = () => {
     [number | string, number | string]
   >(["", ""]);
   const [condition, setCondition] = useState<string>("");
+  const [openAccordion, setOpenAccordion] = useState<string>("");
 
   const [currentPage, setCurrentPage] = useState(1);
-
-  const [sortBy, setSortBy] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>(""); // === CHIAMATA API (Redux Toolkit Query) ===
 
   const { data: products, isLoading } = useGetAllProductsQuery({
     product_type: searchProduct,
@@ -32,11 +50,11 @@ const ProductPage: React.FC = () => {
     price: priceRange.length ? priceRange : undefined,
     condition: condition,
     sortBy: sortBy,
-    limit: 9,
+    limit: 1000, // Esempio di limite prodotti per pagina
     page: currentPage,
   } as any);
 
-  const totalPages = Number(products?.data?.meta?.pagination?.total_pages);
+  const totalPages = Number(products?.data?.meta?.pagination?.total_pages) || 1; // === GESTIONE CARICAMENTO ===
 
   if (isLoading) {
     return (
@@ -44,7 +62,7 @@ const ProductPage: React.FC = () => {
         <Loading />
       </div>
     );
-  }
+  } // === LOGICA CAMBIO PREZZO (Range Selection) ===
 
   const handlePriceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
@@ -71,283 +89,216 @@ const ProductPage: React.FC = () => {
       default:
         min = null;
         max = null;
-    }
+    } // Imposta il range di prezzo
 
-    setPriceRange([min ?? 0, max ?? 9000000]);
+    setPriceRange([min ?? "", max ?? ""]);
   };
 
-  return (
-    <div className="relative bg-[#F2F5F7] flex flex-col lg:flex-row py-8">
-      <Container>
-        {/* Sidebar */}
-        <div className="flex">
-          <div className={`w-0 h-screen lg:w-1/4 bg-white rounded-md lg:mb-5`}>
-            <h3 className="hidden lg:flex text-[32px] text-[#101010] px-5 pt-4 pb-3 border-b font-semibold mb-4">
-              {t("filter")}
-            </h3>
+  /*--------------------------------------------------------
+  ----------------------------------------------------------
 
-            {/* filter for mobile */}
-            {filterView && (
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white rounded-lg p-5">
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold mb-2">{t("products")}</h4>
-                    <p>
-                      <X onClick={() => setFilterView(false)} />
-                    </p>
-                  </div>
+  ----------------------------------------------------------
+  ---------------------------------------------------------*/
+  // *******************************************************************
+  // INIZIO DEI COMPONENTI ACCORDION (Stili Neutri)
+  // *******************************************************************
 
-                  <select
-                    onChange={(e) => setSearchProduct(e.target.value)}
-                    className="w-[80%] text-[#6B6B6B] appearance-none border-none outline-none px-1.5">
-                    {/* "All" option to reset search */}
-                    <option value="">{t("all")}</option>
+  const FAQ_ITEMS = [
+    {
+      question: "Le console sono nuove o ricondizionate?",
+      answer:
+        "Tutte le console che vendiamo sono ricondizionate (refurbished) e certificate dal nostro team di tecnici specializzati. Garantiamo standard di qualità elevatissimi.",
+    },
+    {
+      question: "Le console ricondizionate hanno garanzia?",
+      answer:
+        "Sì. Ogni console ricondizionata è coperta da garanzia come da normativa vigente. Offriamo 12 mesi di garanzia diretta su tutti i componenti hardware.",
+    },
+    {
+      question: "Quanto dura la garanzia e cosa copre?",
+      answer:
+        "La garanzia standard dura 12 mesi e copre qualsiasi difetto hardware non dovuto a uso improprio o danni accidentali. Per i dettagli completi, consultare i Termini e Condizioni.",
+    },
+    {
+      question: "Le console includono tutti i cavi per il funzionamento?",
+      answer:
+        "Sì, ogni console include un controller, il cavo di alimentazione e il cavo HDMI necessari per iniziare subito a giocare.",
+    },
+  ];
 
-                    {/* Dynamically rendered options */}
-                    {products?.data?.meta?.product_meta?.product_types?.map(
-                      (product: string, ind: number) => (
-                        <option key={ind} value={product as string}>
-                          {product as string}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <h4 className="text-[#101010] text-xl font-semibold mb-2">
-                    {t("brand")}
-                  </h4>
+  const dynamicDescriptionContent = (
+    <div className="text-gray-800 space-y-4">
+      <p className="font-bold">{products.product?.name} - Console</p>
+      <p>
+        La console è ricondizionata e certificata dal nostro team di tecnici
+        specializzati.
+      </p>
 
-                  <select
-                    onChange={(e) => setBrandSearch(e.target.value)}
-                    className="w-[80%] text-[#6B6B6B] appearance-none border-none outline-none p-1.5">
-                    {products?.data?.meta?.product_meta?.brands?.map(
-                      (brand: string, ind: number) => (
-                        <option key={ind} value={brand as string}>
-                          {brand as string}
-                        </option>
-                      )
-                    )}
-                    <option value="">{t("all")}</option>
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <h4 className="text-[#101010] text-xl font-semibold mb-2">
-                    {t("priceRange")}
-                  </h4>
-                  <select
-                    onChange={handlePriceChange}
-                    className="w-[80%] text-[#6B6B6B] appearance-none border-none outline-none p-1.5">
-                    <option value="">{t("all")}</option>
+      <p className="font-bold text-lg pt-2">Specifiche Tecniche</p>
+      <ul className="list-none space-y-1 text-sm">
+        {products.product?.memory && (
+          <li>
+            <span className="font-bold">Memoria:</span>{" "}
+            {products.product.memory}
+          </li>
+        )}
+        {products.product?.controller && (
+          <li>
+            <span className="font-bold">Controller:</span>
+            {products.product.controller}
+          </li>
+        )}
+        <li>
+          <span className="font-bold">Condizione:</span>
+          {products.product?.condition || "Ricondizionato"}
+        </li>
+      </ul>
 
-                    <option value="below100">{t("below100")}</option>
-                    <option value="100to300">{t("100to300")}</option>
-                    <option value="300to500">{t("300to500")}</option>
-                    <option value="up500">{t("upFiveHundread")}</option>
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <h4 className="text-[#101010] text-xl font-semibold mb-2">
-                    {t("condition")}
-                  </h4>
-                  <select
-                    onChange={(e) => setCondition(e.target.value)}
-                    className="w-[80%] text-[#6B6B6B] appearance-none border-none outline-none p-1.5">
-                    {products?.data?.meta?.product_meta?.conditions?.map(
-                      (condition: string, ind: string) => (
-                        <option key={ind}>{condition as string}</option>
-                      )
-                    )}
-                    <option value="">{t("all")}</option>
-                  </select>
-                </div>
-                <button
-                  onClick={() => setFilterView(!filterView)}
-                  className="bg-black text-white text-lg w-full rounded-xl py-3">
-                  Filter
-                </button>
-              </div>
-            )}
+      <p className="pt-2">
+        La console {products.product?.name} è pronta per il gioco.
+      </p>
+    </div>
+  );
 
-            {/* filter for desktop */}
-            <div className="hidden lg:block pb-3 mx-4 pt-2">
-              <div className="relative mb-5 border-b-[.75px] border-[#969696]">
-                <h4 className="text-[#101010] text-xl font-semibold mb-2 px-4">
-                  {t("products")}
-                </h4>
+  const FaqAccordion = () => {
+    const [openFaq, setOpenFaq] = useState(
+      "Le console ricondizionate hanno garanzia?"
+    );
 
-                <select
-                  onChange={(e) => setSearchProduct(e.target.value)}
-                  className="w-full text-[#6B6B6B] appearance-none border-none outline-none p-4">
-                  {/* "All" option to reset search */}
-                  <option value="">{t("all")}</option>
+    return (
+      <div className="space-y-4 max-w-xl bg-[#F2F5F7] ">
+        {FAQ_ITEMS.map((item) => {
+          const isOpen = openFaq === item.question;
 
-                  {/* Dynamically rendered options */}
-                  {products?.data?.meta?.product_meta?.product_types?.map(
-                    (product_type: string, idx: number) => (
-                      <option key={idx} value={product_type}>
-                        {product_type}
-                      </option>
-                    )
-                  )}
-                </select>
+          const headerBg = isOpen ? "bg-gray-100" : "bg-white";
+          const headerText = "text-gray-900";
+          const contentBg = "bg-white";
+          const separatorClass = "border-gray-200";
 
-                <div className="absolute bottom-4 right-0 flex items-center pr-3 pointer-events-none">
-                  {/* */}
-                  <svg
-                    className="w-6 h-6 text-[#101010]"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              <div className="relative mb-5 border-b-[.75px] border-[#969696]">
-                <h4 className="text-[#101010] text-xl font-semibold mb-2 px-4">
-                  {t("brand")}
-                </h4>
-                <select
-                  onChange={(e) => setBrandSearch(e.target.value)}
-                  className="w-full text-[#6B6B6B] appearance-none border-none outline-none p-4">
-                  <option value="">{t("all")}</option>
-
-                  {products?.data?.meta?.product_meta?.brands?.map(
-                    (brand: string, ind: number) => (
-                      <option key={ind} value={brand as string}>
-                        {brand as string}
-                      </option>
-                    )
-                  )}
-                </select>
-                <div className="absolute bottom-4 right-0 flex items-center pr-3 pointer-events-none">
-                  {/* */}
-                  <svg
-                    className="w-6 h-6 text-[#101010]"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              <div className="relative mb-5 border-b-[.75px] border-[#969696]">
-                <h4 className="text-[#101010] text-xl font-semibold mb-2 px-4">
-                  {t("priceRange")}
-                </h4>
-                <select
-                  onChange={handlePriceChange}
-                  className="w-full text-[#6B6B6B] appearance-none border-none outline-none p-4">
-                  <option value="">{t("all")}</option>
-
-                  <option value="below100">{t("below100")}</option>
-                  <option value="100to300">{t("100to300")}</option>
-                  <option value="300to500">{t("300to500")}</option>
-                  <option value="up500">{t("upFiveHundread")}</option>
-                </select>
-
-                <div className="absolute bottom-4 right-0 flex items-center pr-3 pointer-events-none">
-                  {/* */}
-                  <svg
-                    className="w-6 h-6 text-[#101010]"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              <div className="relative mb-5 border-b-[.75px] border-[#969696]">
-                <h4 className="text-[#101010] text-xl font-semibold mb-2 px-4">
-                  {t("condition")}
-                </h4>
-                <select
-                  onChange={(e) => setCondition(e.target.value)}
-                  className="w-full text-[#6B6B6B] appearance-none border-none outline-none p-4">
-                  <option value="">{t("all")}</option>
-
-                  {products?.data?.meta?.product_meta?.conditions?.map(
-                    (condition: string, ind: number) => (
-                      <option key={ind}>{condition as string}</option>
-                    )
-                  )}
-                </select>
-
-                <div className="absolute bottom-4 right-0 flex items-center pr-3 pointer-events-none">
-                  {/* */}
-                  <svg
-                    className="w-6 h-6 text-[#101010]"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Product Grid */}
-          <div className="w-full lg:w-3/4 lg:ml-6">
-            {/* View Toggle */}
-            <div className="lg:bg-[#FDFDFD] flex justify-between items-center p-2.5 rounded-md mb-4">
-              {/* filter icon for mobile */}
+          return (
+            <div
+              key={item.question}
+              className="pb-0 overflow-hidden border border-gray-200 rounded-lg shadow-sm bg-">
               <div
-                onClick={() => setFilterView(!filterView)}
-                className={`flex h-10 lg:hidden items-center gap-2 border ${
-                  filterView && "bg-gray-200"
-                } rounded-lg w-max p-2`}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-filter">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-                <h3 className="text-sm font-medium">{t("filter")}</h3>
+                className={`p-4 flex items-start justify-between cursor-pointer transition-colors duration-200 
+                            ${headerBg} ${headerText} ${
+                  isOpen ? "font-semibold" : "font-medium"
+                }`}
+                onClick={() => setOpenFaq(isOpen ? "" : item.question)}>
+                <h4 className="text-base pr-4">{item.question}</h4>
+
+                {isOpen ? (
+                  <Minus className="h-5 w-5 text-gray-700 flex-shrink-0" />
+                ) : (
+                  <Plus className="h-5 w-5 text-gray-700 flex-shrink-0" />
+                )}
               </div>
 
+              {isOpen && (
+                <div className={`bg-white p-4 pt-3 border-t ${separatorClass}`}>
+                  <p className="text-gray-700 text-sm">{item.answer}</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const ACCORDION_ITEMS = [
+    { title: "Descrizione Prodotto", content: dynamicDescriptionContent },
+    {
+      title: "Garanzia Console Locker",
+      content: (
+        <p className="text-gray-800">
+          Le nostre console ricondizionate sono coperte da una garanzia completa
+          di 12 mesi contro difetti di fabbricazione. Per maggiori dettagli,
+          consulta la nostra sezione termini e condizioni.
+        </p>
+      ),
+    },
+    {
+      title: "FAQ",
+      content: <FaqAccordion />,
+    },
+  ];
+
+  const AccordionItem = ({
+    title,
+    content,
+  }: {
+    title: string;
+    content: React.ReactNode;
+  }) => {
+    // Usiamo lo stato globale della pagina
+    const isOpen = openAccordion === title;
+
+    const headerBgClass = "bg-transparent";
+    const textColorClass = "text-gray-900";
+    const separatorClass = "border-gray-900";
+
+    return (
+      <div className={`mb-0 border-b bg-[#F2F5F7] ${separatorClass}`}>
+        <div
+          className={`p-4 flex items-center justify-between cursor-pointer transition-colors duration-200 
+                    border-gray-900  ${headerBgClass}`}
+          onClick={() => setOpenAccordion(isOpen ? "" : title)}>
+          <h3 className={`font-semibold text-lg ${textColorClass}`}>{title}</h3>
+
+          {isOpen ? (
+            <ChevronUp className="h-6 w-6 text-gray-700" />
+          ) : (
+            <ChevronDown className="h-6 w-6 text-gray-700" />
+          )}
+        </div>
+
+        {isOpen && (
+          <div className={`bg-[#F2F5F7] p-4 pt-2 border-t ${separatorClass}`}>
+            {content}
+          </div>
+        )}
+      </div>
+    );
+  };
+  // *******************************************************************
+  // FINE DEI COMPONENTI ACCORDION
+  // *******************************************************************
+
+  /*------------------------------------------------------------------------*/
+  return (
+    <div className="relative bg-[#F2F5F7] py-8">
+      <Container>
+        {/* === INTESTAZIONE MOBILE === */}
+        <MobileHeader setFilterView={setFilterView} />
+        <div className="flex">
+          {/* === 1. SIDEBAR (FILTRI/OVERLAY) === */}
+
+          <ProductSidebar
+            t={t}
+            products={products}
+            filterView={filterView}
+            setFilterView={setFilterView}
+            currentSearchProduct={searchProduct}
+            currentBrandSearch={brandSearch}
+            currentCondition={condition}
+            setSearchProduct={setSearchProduct}
+            setBrandSearch={setBrandSearch}
+            handlePriceChange={handlePriceChange}
+            setCondition={setCondition}
+          />
+          {/* === 2. GRIGLIA PRODOTTI === */}
+          <div className="w-full lg:w-3/4 lg:ml-6">
+            {/* View Toggle / Sorting (Solo Desktop) */}
+            <div className="hidden lg:flex lg:bg-[#FDFDFD] justify-between items-center p-2.5 rounded-md mb-4">
               {/* view - grid / list */}
-              <div className="hidden lg:flex gap-2 items-center cursor-pointer">
+
+              <div className="flex gap-2 items-center cursor-pointer">
                 <div
                   onClick={() => setView("grid")}
                   className={`hover:bg-[#DAEDF2] p-3 rounded-lg ${
                     view === "grid" ? "bg-[#DAEDF2]" : ""
                   }`}>
-                  {/* <LayoutGrid /> */}
                   <Image
                     src="/sell/grid.svg"
                     width={20}
@@ -355,12 +306,12 @@ const ProductPage: React.FC = () => {
                     alt="grid"
                   />
                 </div>
+
                 <div
                   onClick={() => setView("list")}
                   className={`hover:bg-[#DAEDF2] p-3 rounded-lg ${
                     view === "list" ? "bg-[#DAEDF2]" : ""
                   }`}>
-                  {/* <LayoutList /> */}
                   <Image
                     src="/sell/list.svg"
                     width={20}
@@ -369,7 +320,6 @@ const ProductPage: React.FC = () => {
                   />
                 </div>
               </div>
-
               {/* sorting */}
               <div className="h-10 relative flex gap-3">
                 <select
@@ -378,18 +328,15 @@ const ProductPage: React.FC = () => {
                   <option
                     defaultValue={"Sort By"}
                     value={""}
-                    className="text-[#101010]"
-                    // disabled
-                  >
+                    className="text-[#101010]">
                     {t("sortBy")}
-                    <span className="text-xs"> (Default)</span>
                   </option>
+
                   <option value="max_price">{t("highToLow")}</option>
                   <option value="min_price">{t("lowToHigh")}</option>
                 </select>
 
                 <div className="absolute inset-y-0 -right-2 flex items-center pr-3 pointer-events-none">
-                  {/* */}
                   <svg
                     className="w-6 h-6 text-[#101010]"
                     xmlns="http://www.w3.org/2000/svg"
@@ -406,48 +353,49 @@ const ProductPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {products?.data?.products.length < 1 ? (
+            {/* Messaggio Nessun Prodotto */}
+            {products?.data?.products?.length < 1 ? (
               <div className="flex items-center justify-center h-[calc(100vh-200px)] text-2xl font-medium">
-                No, Playstation found!
+                Nessuna Console Trovata
               </div>
             ) : null}
-
-            {/* Products */}
+            {/* Products (Grid logic) */}
+            {/* Nota: L'attuale ProductCard è ottimizzato per il layout 'list' (immagine a sinistra), 
+            ma lo riutilizziamo qui per il layout 'grid' */}
             {view === "grid" ? (
-              <div
-                className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6`}>
+              <div className={`grid grid-cols-1 gap-6`}>
+                {/* ERA: grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 */}
                 {products?.data?.products?.map((product: any) => (
                   <ProductCard
-                    product={product}
                     key={product._id}
-                    layout="photo" // <-- MODIFICA CHIAVE 3: Usa il layout flessibile 'old'
+                    product={product}
+                    layout="grid"
                   />
                 ))}
               </div>
             ) : null}
-
+            {/* Products (List logic) */}
+            {/* Già grid-cols-1, ma mantenuto per coerenza */}
             {view === "list" ? (
-              <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12`}>
+              <div className={`grid grid-cols-1 gap-4`}>
                 {products?.data?.products?.map((product: any) => (
                   <ProductCard
-                    product={product}
                     key={product._id}
-                    layout="photo"
-                    // Lascia il layout come 'old' (default) o come desiderato
+                    product={product}
+                    layout="list"
                   />
                 ))}
               </div>
             ) : null}
-            {/* Todo */}
-            {/* Pagination */}
-            {
+            {/* Paginazione */}
+            {totalPages > 1 && (
               <div className="flex justify-center items-center gap-3 my-12">
                 <button
                   onClick={() => {
                     setCurrentPage((prev) => Math.max(prev - 1, 1));
                   }}
-                  className="w-10 h-10 flex items-center justify-center bg-transparent mr-2">
+                  disabled={currentPage === 1}
+                  className="w-10 h-10 flex items-center justify-center bg-transparent mr-2 disabled:opacity-50">
                   <ChevronLeft />
                 </button>
 
@@ -471,13 +419,87 @@ const ProductPage: React.FC = () => {
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
-                  className="w-10 h-10 flex items-center justify-center bg-transparent ml-2">
+                  disabled={currentPage === totalPages}
+                  className="w-10 h-10 flex items-center justify-center bg-transparent ml-2 disabled:opacity-50">
                   <ChevronRight />
                 </button>
               </div>
-            }
+            )}
           </div>
         </div>
+        {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
+        <div className="px-5 pb-8 mt-6">
+          {ACCORDION_ITEMS.map((item) => (
+            <AccordionItem
+              key={item.title}
+              title={item.title}
+              content={item.content}
+            />
+          ))}
+        </div>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* NUOVA SEZIONE: Vantaggi e Pagamento a Rate */}
+        {/* ------------------------------------------------------------------ */}
+        <div className="px-5 py-4">
+          {/* 1. Blocchetto Pagamento a Rate */}
+          <div className={"p-4 mb-4 rounded-lg shadow-md bg-[#FDFDFD] border"}>
+            <div className="flex items-center justify-center space-x-2">
+              <p className="text-xl font-bold text-[#101010]">
+                Paga in 3 rate con
+              </p>
+              <Image
+                src="/payments/paypal2.svg" // Assicurati che il percorso sia corretto
+                alt="PayPal"
+                width={75} // Riduci la larghezza per renderla più simile a Klarna
+                height={20}
+                className="h-5 w-auto"
+              />
+              <p className="text-xl font-bold text-[#101010]">o</p>
+              <Image
+                src="/payments/klarna.png" // Assicurati che il percorso sia corretto
+                alt="Klarna"
+                width={40} // Riduci la larghezza per proporzione
+                height={20}
+                className="h-10 w-auto"
+              />
+            </div>
+            <p className="text-base text-center text-gray-700 mt-1">
+              senza interessi ne costi aggiuntivi.
+            </p>
+          </div>
+
+          {/* 2. Blocchetto Vantaggi (Garanzia, Spedizione, Reso) */}
+          <div className="bg-[#FDFDFD] p-4 rounded-lg shadow-md space-y-4">
+            {/* Vantaggio 1: Garanzia */}
+            <div className="flex items-center space-x-3">
+              <ShieldCheck className="h-6 w-6 text-gray-600 flex-shrink-0" />
+              <p className="text-lg text-[#101010] font-medium">
+                Riconfezionato -
+                <span className="font-bold">12 Mesi di garanzia.</span>
+              </p>
+            </div>
+
+            {/* Vantaggio 2: Spedizione */}
+            <div className="flex items-center space-x-3">
+              <Truck className="h-6 w-6 text-gray-600 flex-shrink-0" />
+              <p className="text-lg text-[#101010] font-medium">
+                <span className="font-bold">Spedizione Veloce e Gratuita.</span>
+              </p>
+            </div>
+
+            {/* Vantaggio 3: Reso */}
+            <div className="flex items-center space-x-3">
+              <RefreshCw className="h-6 w-6 text-gray-600 flex-shrink-0" />
+              <p className="text-lg text-[#101010] font-medium">
+                Hai cambiato idea?
+                <span className="font-bold">Il reso è gratuito.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <CartReviewGrid productName={products.name} />
       </Container>
     </div>
   );
