@@ -25,6 +25,23 @@ interface ProductCardProps {
   handleAddToCart: (product: ProductData) => void;
 }
 
+const getConditionText = (condition: string) => {
+  const normalizedcondition = condition.toLowerCase();
+
+  switch (normalizedcondition) {
+    case "new":
+      return "Nuovo";
+    case "accettabile":
+      return "Accettabile";
+    case "eccellente":
+      return "Eccellente";
+    case "ottimo":
+      return "Ottime";
+    default:
+      return "Condizione non specificata";
+  }
+};
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -32,6 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   product,
 }) => {
   const productUrl = `/buy/${product?.slug}`;
+  const conditionText = getConditionText(product.condition);
 
   const { t } = useTranslation();
 
@@ -51,7 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   const cardClasses = `
     bg-white rounded-xl shadow-md p-3 flex 
-    ${product.quantity === 0 ? "opacity-100" : "opacity-70"}
+    ${product.quantity === 0 ? "bg-black/50" : "opacity-70"}
   `;
 
   // Estrai il prezzo senza decimali
@@ -63,7 +81,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <Link href={productUrl} className={cardClasses}>
       {/* Blocco Immagine */}
-      <div className="w-1/3 min-w-[100px] flex-shrink-0 relative overflow-hidden rounded-lg bg-gray-100 mr-4 aspect-square">
+      <div className="w-1/3 min-w-[100px] flex-shrink-0 relative overflow-hidden rounded-lg  mr-4 aspect-square">
         <img
           src={`${API_URL}${product?.images[0]}`}
           alt={product?.name}
@@ -110,7 +128,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 parts.push("");
               }
               if (product.condition !== "-") {
-                parts.push(product.condition);
+                parts.push(`${conditionText}`);
               }
             }
 
@@ -174,9 +192,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </>
           ) : (
             <>
-              <p className="text-sm text-red-600 font-semibold mb-2 z-20 relative">
-                Non disponibile.
-              </p>
               <button
                 onClick={handleAction}
                 // Diamo un z-index superiore al pulsante per essere cliccabile sopra l'overlay
