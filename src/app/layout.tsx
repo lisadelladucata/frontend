@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 import "../i18n";
 import Providers from "@/redux/Provider";
 import CookieBanner from "./CookieBanner";
+import Script from "next/script";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -28,6 +29,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <Script
+        strategy="lazyOnload"
+        id="trustpilot-base-script"
+        src="https://widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"
+      />
       <body
         className={`antialiased ${poppins.className}`}
         // ELIMINATO: upword-verified='true'

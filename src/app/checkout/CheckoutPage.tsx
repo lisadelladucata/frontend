@@ -11,6 +11,7 @@ import { useCreateCustomerMutation } from "@/redux/features/customer/CustomerAPI
 import toast from "react-hot-toast";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetProductsByIdsQuery } from "@/redux/features/products/GetProductByIds";
+import InvitationSender from "../trustpilot/invitationSender";
 
 interface OrderItem {
   id: string;
@@ -813,6 +814,11 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
+        {/* <InvitationSender
+          orderId={orderItem.id}
+          customerEmail={orderItem.customer.email} // Assicurati di passare dati validi!
+          customerName={orderItem.customer.name}
+        /> */}
       </Container>
     </div>
   );

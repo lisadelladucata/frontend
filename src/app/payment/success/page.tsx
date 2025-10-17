@@ -2,10 +2,9 @@
 
 import { modifiedCart } from "@/redux/features/cart/TrackCartItem";
 import { useGetOrderQuery } from "@/redux/features/order/OrderAPI";
-import { useSellUltimateProductMutation } from "@/redux/features/sell/SellProductAPI";
 import { Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useEffect } from "react";
+import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 
 export default function PaymentSuccess() {
@@ -13,55 +12,44 @@ export default function PaymentSuccess() {
   const query = useSearchParams();
   const router = useRouter();
   const orderId = query.get("orderId");
-  const [sellProduct] = useSellUltimateProductMutation();
 
+  // Se l'ID dell'ordine non è presente, reindirizza.
   if (!orderId) {
     router.push("/cart");
     return null;
   }
 
-  const tradeInData = JSON.parse(localStorage?.getItem("tradeInData") || "{}");
+  // Recupera i dati dell'ordine per la visualizzazione sulla pagina.
+  // La finalizzazione dell'ordine (vendita/stock) è gestita dal Webhook del server.
   const customer = JSON.parse(localStorage?.getItem("customer") || "{}")?._id;
-  const bank = JSON.parse(localStorage?.getItem("bank") || "{}")?._id;
-  const paypal = JSON.parse(localStorage?.getItem("paypal") || "{}")?._id;
-
-  let payment;
-
-  if (bank) {
-    payment = bank;
-  } else if (paypal) {
-    payment = paypal;
-  }
-
-  const postTradeInData = {
-    customer,
-    ...tradeInData,
-    payment: {
-      paypal: payment || "",
-    },
-  };
-
-  const { data: order, refetch } = useGetOrderQuery({
-    orderId: query.get("orderId"),
+  const { data: order } = useGetOrderQuery({
+    orderId: orderId,
     customer,
   });
 
+  // LOGICA CRUCIALE DI PULIZIA
   useEffect(() => {
-    const res = sellProduct(postTradeInData).unwrap();
-    console.log(res);
-  }, []);
+    // Ci assicuriamo che i dati dell'ordine siano stati caricati prima di procedere.
+    if (order?.data?._id) {
+      // 1. Pulisce lo stato del carrello in Redux
+      dispatch(modifiedCart({}));
 
-  useEffect(() => {
-    dispatch(modifiedCart({}));
+      // 2. Pulisce i dati locali
+      const cart = localStorage?.getItem("cart");
 
-    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
+      if (cart && JSON.parse(cart).length > 0) {
+        localStorage?.removeItem("cart");
 
-    if (cart.length > 0) {
-      localStorage?.removeItem("cart");
+        // Pulisce anche i dati di trade-in/pagamento temporanei usati nel checkout
+        localStorage?.removeItem("tradeInData");
+        localStorage?.removeItem("bank");
+        localStorage?.removeItem("paypal");
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+        // Ricarica la pagina per assicurare l'aggiornamento dell'UI (es. icona carrello)
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
     }
   }, [order, dispatch]);
 
@@ -111,34 +99,12 @@ export default function PaymentSuccess() {
             </div>
           </div>
 
-          {/* <div className="space-y-3">
-            <button className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-md transition-colors">
-              <Download className="h-5 w-5" />
-              Download Receipt
-            </button>
-
-            <Link
-              href="/orders"
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-md transition-colors"
-            >
-              View Order Details
-            </Link>
-
-            <Link
-              href="/"
-              className="w-full flex items-center justify-center gap-2 text-green-600 hover:text-green-700 py-2 transition-colors"
-            >
-              Continue Shopping
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div> */}
+          {/* I link di navigazione e i pulsanti sono stati commentati nel tuo codice originale. 
+              Li lascio commentati qui per mantenere la parità. 
+            <div className="space-y-3"> ... </div> */}
         </div>
 
-        {/* <div className="bg-gray-50 p-4 text-center">
-          <p className="text-sm text-gray-600">
-            A confirmation email has been sent to your email address.
-          </p>
-        </div> */}
+        {/* <div className="bg-gray-50 p-4 text-center"> ... </div> */}
       </div>
 
       <div className="mt-8 text-center">

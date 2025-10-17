@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Container from "@/components/common/Container";
@@ -31,15 +31,27 @@ interface IProduct {
   __v: number;
 }
 
+// Funzione helper per leggere e parsare i dati dal localStorage
+const getLocalData = (key: string, defaultValue: any = null) => {
+  if (typeof window !== "undefined" && localStorage.getItem(key)) {
+    try {
+      return JSON.parse(localStorage.getItem(key) as string);
+    } catch {
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 export default function Checkout() {
   const [orderIndex, setOrderIndex] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<
     "card" | "paypal" | "klarna"
   >("card");
-  const [cartData, setCartData] = useState([]);
-  const [customerIdOnlocalStorage, setCustomerIdOnlocalStorage] = useState<
-    string | number
-  >("");
+
+  // STATO CENTRALIZZATO
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [customerId, setCustomerId] = useState<string | number>("");
   const [secondaryPhone, setSecondaryPhone] = useState<string | number>("");
 
   const { t } = useTranslation();
@@ -47,191 +59,161 @@ export default function Checkout() {
   const [createOrder] = useCreateOrderMutation();
   const router = useRouter();
 
-  const getProductIds = () => {
-    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
-    const productIds: string[] = cart.map(
-      (item: { productId: string; tradeIn: any }) => item.productId
-    );
-    return productIds.join(",");
-  };
-
-  const { data: products, refetch } = useGetProductsByIdsQuery(getProductIds());
-
-  // get the cart data from localStorage?
+  // 1. Caricamento Dati Iniziali dal localStorage
   useEffect(() => {
-    const cart = localStorage?.getItem("cart");
+    // Il carrello, per le operazioni CRUD, ora usa cartItems
+    setCartItems(getLocalData("cart", []));
+    setSecondaryPhone(getLocalData("secondary_phone", ""));
 
-    if (cart) {
-      try {
-        setCartData(JSON.parse(cart));
-      } catch {
-        setCartData([]);
-      }
-    }
+    const customerData = getLocalData("customer");
+    setCustomerId(customerData?._id || "");
   }, []);
 
-  // get the secondary phone from localStorage?
-  useEffect(() => {
-    const phone = localStorage?.getItem("secondary_phone");
+  // 2. Derivazione dell'argomento per la query RTK (ids separati da virgola)
+  const productIdsQuery = useMemo(() => {
+    return cartItems.map((item) => item.productId).join(",");
+  }, [cartItems]);
 
-    if (phone) {
-      try {
-        setSecondaryPhone(JSON.parse(phone));
-      } catch {
-        setSecondaryPhone("");
-      }
+  // 3. Fetch dei prodotti
+  const { data: products, refetch } = useGetProductsByIdsQuery(
+    productIdsQuery,
+    {
+      // Salta la query se il carrello è vuoto
+      skip: productIdsQuery.length === 0,
     }
-  }, []);
-
-  // get the customer id from localStorage?
-  useEffect(() => {
-    const customer = JSON.parse(localStorage?.getItem("customer") || "null");
-
-    if (customer) {
-      try {
-        setCustomerIdOnlocalStorage(customer?._id);
-      } catch {
-        setCustomerIdOnlocalStorage("");
-      }
-    }
-  }, []);
-
-  const getProductQuantity = (id: string) => {
-    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
-    const product = cart.find(
-      (item: { productId: string }) => item.productId === id
-    );
-
-    return product ? product.quantity : 0;
-  };
-
-  const subtotal = products?.data?.products.reduce(
-    (total: number, product: IProduct) => {
-      const quantity = getProductQuantity(product?._id);
-
-      // Multiply the quantity by the offer price of the product
-      return total + quantity * product.offer_price;
-    },
-    0
   );
 
-  const increaseQuantity = (id: string) => {
-    // Get the cart data from localStorage?
-    refetch();
-    const cartData = JSON.parse(localStorage?.getItem("cart") || "[]");
+  // 4. Calcolo Ottimizzato delle Quantità e del Subtotale
+  const { productQuantities, subtotal } = useMemo(() => {
+    // Crea una mappa { productId: quantity } per una lookup veloce
+    const quantities = cartItems.reduce((acc, item) => {
+      acc[item.productId] = item.quantity;
+      return acc;
+    }, {} as Record<string, number>);
 
-    const itemExists = cartData.some((item: any) => item.productId === id);
+    // Calcola il subtotale usando i dati dei prodotti e la mappa delle quantità
+    const total = products?.data?.products.reduce(
+      (sum: number, product: IProduct) => {
+        const quantity = quantities[product._id] || 0;
+        return sum + quantity * product.offer_price;
+      },
+      0
+    );
+
+    return { productQuantities: quantities, subtotal: total };
+  }, [cartItems, products]);
+
+  // Funzione per aggiornare localStorage e lo stato locale
+  const updateCart = useCallback(
+    (newCart: any[]) => {
+      localStorage.setItem("cart", JSON.stringify(newCart));
+      setCartItems(newCart);
+      refetch(); // Ricarica i dati dei prodotti per aggiornare il riepilogo
+    },
+    [refetch]
+  );
+
+  // Non serve più getProductQuantity, usiamo productQuantities[id]
+
+  const increaseQuantity = (id: string) => {
+    const itemExists = cartItems.some((item: any) => item.productId === id);
 
     if (!itemExists) {
       toast.error("Please, add the product first!");
       return;
     }
 
-    // Check if the product exists in the cart
-    const updatedCart = cartData.map((item: any) => {
+    const updatedCart = cartItems.map((item: any) => {
       if (item.productId === id) {
-        return { ...item, quantity: item.quantity + 1 }; // Increase quantity
+        return { ...item, quantity: item.quantity + 1 };
       }
-
       return item;
     });
 
-    // Store the updated cart back into localStorage?
-    localStorage?.setItem("cart", JSON.stringify(updatedCart));
+    updateCart(updatedCart);
   };
 
   const decreaseQuantity = (id: string) => {
-    refetch();
-    // Get the cart data from localStorage?
-    const cartData = JSON.parse(localStorage?.getItem("cart") || "[]");
-
-    const itemExists = cartData.some((item: any) => item.productId === id);
+    const itemExists = cartItems.some((item: any) => item.productId === id);
 
     if (!itemExists) {
       toast.error("Please, add the product first!");
       return;
     }
 
-    // Check if the product exists in the cart
-    const updatedCart = cartData.map((item: any) => {
+    const updatedCart = cartItems.map((item: any) => {
       if (item.productId === id && item.quantity > 1) {
-        // Decrease quantity only if it's greater than 1
         return { ...item, quantity: item.quantity - 1 };
       }
       return item;
     });
 
-    // Store the updated cart back into localStorage?
-    localStorage?.setItem("cart", JSON.stringify(updatedCart));
+    updateCart(updatedCart);
   };
 
   const removeItem = (id: string) => {
-    refetch();
-    setOrderIndex(0);
-    const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
-    const updatedCart = cart.filter(
+    const updatedCart = cartItems.filter(
       (item: { productId: string }) => item.productId !== id
     );
 
-    localStorage?.setItem("cart", JSON.stringify(updatedCart));
+    updateCart(updatedCart);
+    setOrderIndex(0); // Reset della visualizzazione carosello
 
-    if (products?.data?.products?.length === 0) {
-      toast.error("Please, add the product first!");
-
+    if (products?.data?.products?.length === 1) {
+      // L'unico elemento che sta per essere rimosso
+      toast.error("Your cart is now empty!");
       router.push("/buy");
     }
   };
 
+  // LOGICA CAROSELLO CORRETTA
+  const totalProducts = products?.data?.products.length || 0;
+
   const handlePrevious = () => {
-    if (orderIndex === products?.data?.products.length - 1) {
-      setOrderIndex(0);
-      return;
-    }
-    setOrderIndex((prev) => prev + 1);
+    if (totalProducts === 0) return;
+    // Ritorna all'ultimo indice se si è al primo, altrimenti decrementa
+    setOrderIndex((prev) => (prev - 1 + totalProducts) % totalProducts);
   };
 
   const handleNext = () => {
-    if (orderIndex === products?.data?.products.length - 1) {
-      setOrderIndex(0);
-      return;
-    }
-    setOrderIndex((prev) => prev + 1);
+    if (totalProducts === 0) return;
+    // Passa al prossimo indice, con loop al primo se si è all'ultimo
+    setOrderIndex((prev) => (prev + 1) % totalProducts);
   };
 
-  const formattedCartData = cartData.map((item: any) => ({
-    product: item.productId,
-    quantity: item.quantity,
-  }));
-
   const handlePayment = async () => {
-    const orderInformation = {
-      productDetails: formattedCartData,
-      customer: customerIdOnlocalStorage,
-      secondary_phone: secondaryPhone,
-      method: selectedPayment,
-    };
-
-    if (products?.data?.products?.length === 0) {
+    if (totalProducts === 0) {
       toast.error("Please, add the product first!");
-
       router.push("/buy");
       return;
     }
+
+    // Formattazione dei dati del carrello dallo stato locale
+    const formattedCartData = cartItems.map((item: any) => ({
+      product: item.productId,
+      quantity: item.quantity,
+    }));
+
+    const orderInformation = {
+      productDetails: formattedCartData,
+      customer: customerId,
+      secondary_phone: secondaryPhone,
+      method: selectedPayment,
+    };
 
     const response = await createOrder(orderInformation).unwrap();
 
     if (response?.success) {
       toast.success(response?.message);
-
+      // REINDIRIZZAMENTO A STRIPE CHECKOUT (Corretto)
       window.location.href = response?.data?.checkout_url;
-
-      // do empty cart after payment success
-      // localStorage?.removeItem("cart");
     } else if (response?.error) {
       toast.error(response?.error);
       return;
     }
   };
+
+  const currentProduct = products?.data?.products?.[orderIndex] as IProduct;
 
   return (
     <div className="min-h-screen bg-[#F2F5F7] pt-8 pb-16">
@@ -295,7 +277,6 @@ export default function Checkout() {
                         name="payment"
                         checked={selectedPayment === "card"}
                         onChange={() => setSelectedPayment("card")}
-                        // className="h-4 w-4 text-blue-600"
                         className="mr-2 scale-150 accent-black text-lg text-[#101010] font-medium"
                       />
                       <label
@@ -334,7 +315,6 @@ export default function Checkout() {
                         name="payment"
                         checked={selectedPayment === "paypal"}
                         onChange={() => setSelectedPayment("paypal")}
-                        // className="h-4 w-4 text-blue-600"
                         className="mr-2 scale-150 accent-black text-lg text-[#101010] font-medium"
                       />
                       <label
@@ -366,46 +346,6 @@ export default function Checkout() {
                   </h3>
                   {/* PayPal Installments */}
                   <div className="flex flex-col lg:flex-row items-center lg:justify-between gap-6">
-                    {/* <div
-                      className={`flex items-center space-x-4 p-5 border rounded-md ${
-                        selectedPayment === "paypal2"
-                          ? "border-emerald-950"
-                          : "border-[#FDFDFD]"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        id="paypal2"
-                        name="payment"
-                        checked={selectedPayment === "paypal2"}
-                        onChange={() => setSelectedPayment("paypal2")}
-                        // className="h-4 w-4 text-blue-600"
-                        className="mr-2 scale-150 accent-black text-lg text-[#101010] font-medium"
-                      />
-                      <label
-                        htmlFor="paypal2"
-                        className="flex items-center space-x-2 cursor-pointer"
-                      >
-                        <p className="flex flex-col mr-3">
-                          <span className="text-base lg:text-lg font-medium text-[#101010]">
-                            {t("payInInstallments")}:
-                          </span>
-                          <span className="text-[#5F5F5F] text-xs md:text-base">
-                            {t("payIn3InterestFreeInstallments")}
-                          </span>
-                        </p>
-                        <div className="flex space-x-2">
-                          <Image
-                            src="/payments/paypal2.svg"
-                            alt="Visa"
-                            width={32}
-                            height={20}
-                            className="h-5 w-auto"
-                          />
-                        </div>
-                      </label>
-                    </div> */}
-
                     <div
                       className={`flex items-center space-x-4 p-5 border rounded-md ${
                         selectedPayment === "klarna"
@@ -456,13 +396,11 @@ export default function Checkout() {
                 </div>
 
                 {/* Proceed Button */}
-                {/* <Link href={"/empty"}> */}
                 <button
                   onClick={handlePayment}
                   className="w-full bg-black text-white py-3 rounded mt-6 hover:bg-gray-800 transition-colors">
                   {t("proceedToPurchase")}
                 </button>
-                {/* </Link> */}
 
                 {/* Terms and Privacy */}
                 <p className="mt-4 text-lg text-[#2B2B2B]">
@@ -482,13 +420,9 @@ export default function Checkout() {
 
           {/* Right Column - Order Summary */}
           <div className="bg-[#FDFDFD] p-6 rounded-lg shadow-sm">
-            {/* <h2 className="text-2xl font-semibold text-[#101010] mb-6">
-              {t("yourOrder")}
-            </h2> */}
-
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-[#101010] mb-4">
-                {t("yourOrder")} ({products?.data?.products.length})
+                {t("yourOrder")} ({totalProducts})
               </h2>
               <div className="flex gap-4">
                 <button
@@ -507,13 +441,13 @@ export default function Checkout() {
             </div>
 
             <div className="border-b pb-4 mb-4">
-              {products?.data?.products?.length > 0 && (
+              {currentProduct ? (
                 <div className="flex gap-4">
                   <div className="relative w-[120px] h-[120px]">
                     <Image
                       src={
-                        products?.data?.products?.[orderIndex]?.images?.[0]
-                          ? `${API_URL}/${products.data.products[orderIndex].images[0]}`
+                        currentProduct.images?.[0]
+                          ? `${API_URL}/${currentProduct.images[0]}`
                           : ""
                       }
                       alt="Product Image"
@@ -523,20 +457,14 @@ export default function Checkout() {
                     />
                   </div>
                   <div className="flex-grow space-y-1">
-                    <h3 className="font-medium">
-                      {products?.data?.products[orderIndex].name}
-                    </h3>
+                    <h3 className="font-medium">{currentProduct.name}</h3>
                     <p className="text-sm text-gray-600">
-                      {t("warranty")}:
-                      {products?.data?.products[orderIndex]?.model} |
-                      {products?.data?.products[orderIndex]?.memory}
+                      {t("warranty")}:{currentProduct.model} |
+                      {currentProduct.memory}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {t("condition")}:
-                      {products?.data?.products[orderIndex]?.controller}
+                      {t("condition")}:{currentProduct.controller}
                     </p>
-                    {/*
-                     */}
                     <p className="text-sm text-gray-600">
                       {t("salesAndShipping")}: Console & you
                     </p>
@@ -546,54 +474,42 @@ export default function Checkout() {
                     <p className="font-medium">
                       &euro;
                       {(
-                        products?.data?.products[orderIndex]?.offer_price *
-                        getProductQuantity(
-                          products?.data?.products[orderIndex]?._id
-                        )
+                        currentProduct.offer_price *
+                        productQuantities[currentProduct._id]
                       ).toFixed(2)}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <button
-                        onClick={() =>
-                          decreaseQuantity(
-                            products?.data?.products[orderIndex]?._id
-                          )
-                        }
+                        onClick={() => decreaseQuantity(currentProduct._id)}
                         className="w-6 h-6 flex items-center justify-center border rounded">
                         -
                       </button>
-                      <span>
-                        {getProductQuantity(
-                          products?.data?.products[orderIndex]?._id
-                        )}
-                      </span>
+                      <span>{productQuantities[currentProduct._id]}</span>
                       <button
-                        onClick={() =>
-                          increaseQuantity(
-                            products?.data?.products[orderIndex]?._id
-                          )
-                        }
+                        onClick={() => increaseQuantity(currentProduct._id)}
                         className="w-6 h-6 flex items-center justify-center border rounded">
                         +
                       </button>
                     </div>
                     <button
-                      onClick={() =>
-                        removeItem(products?.data?.products[orderIndex]?._id)
-                      }
+                      onClick={() => removeItem(currentProduct._id)}
                       className="text-sm text-red-600 mt-2">
                       Remove
                     </button>
                   </div>
                 </div>
+              ) : (
+                <p className="text-center text-gray-500">Your cart is empty.</p>
               )}
             </div>
 
             {/* Price Summary */}
             <div className="bg-[#DAEDF2] mb-6 p-4 rounded-lg space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600 font-semibold">Xbox One</span>
-                <span>${subtotal}</span>
+                <span className="text-gray-600 font-semibold">
+                  Xbox One (Esempio)
+                </span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>{t("shipping")}</span>
@@ -601,7 +517,7 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between font-medium pt-2 border-t">
                 <span>{t("grandTotal")}</span>
-                <span>${subtotal}</span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
               <p className="text-xs text-gray-500">
                 {t("thePriceIncludesVAT")}
@@ -647,20 +563,7 @@ export default function Checkout() {
 
             {/* Payment Methods */}
             <div className="mt-6 flex items-center space-x-2">
-              {/* <Image
-                src="/placeholder.svg"
-                alt="Klarna"
-                width={60}
-                height={20}
-                className="h-6 w-auto"
-              />
-              <Image
-                src="/placeholder.svg"
-                alt="PayPal"
-                width={60}
-                height={20}
-                className="h-6 w-auto"
-              /> */}
+              {/* Le icone dei metodi di pagamento in fondo alla colonna destra sono state omesse nel tuo codice originale e le mantengo così */}
             </div>
           </div>
         </div>
