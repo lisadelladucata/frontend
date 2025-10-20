@@ -29,11 +29,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Script
+      {/* <Script
         strategy="lazyOnload"
         id="trustpilot-base-script"
         src="https://widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"
-      />
+      /> */}
       <body
         className={`antialiased ${poppins.className}`}
         // ELIMINATO: upword-verified='true'

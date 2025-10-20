@@ -5,7 +5,7 @@ const baseAPI = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_URL2,
   }),
-  tagTypes: ["Products", "reviews", "review", "newsletter"],
+  tagTypes: ["Products", "reviews", "review"],
   endpoints: () => ({}),
 });
 

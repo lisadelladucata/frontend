@@ -39,7 +39,6 @@ export function ConsoleFooter() {
             <NewsletterForm />
           </section>
         </div>
-        <TrustpilotWidget />
         {/* Main Footer Content */}
         <div className="lg:flex grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 justify-between gap-8 md:mb-16 px-3 lg:p-0 pb-6">
           {/* Payment Methods */}

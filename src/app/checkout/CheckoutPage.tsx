@@ -11,7 +11,7 @@ import { useCreateCustomerMutation } from "@/redux/features/customer/CustomerAPI
 import toast from "react-hot-toast";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetProductsByIdsQuery } from "@/redux/features/products/GetProductByIds";
-import InvitationSender from "../trustpilot/invitationSender";
+// import InvitationSender from "../trustpilot/invitationSender";
 
 interface OrderItem {
   id: string;
