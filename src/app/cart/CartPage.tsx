@@ -1,5 +1,3 @@
-// CartPage.tsx (CORRETTO)
-
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -16,17 +14,10 @@ import React from "react";
 
 // 🚀 IMPORT DELLE AZIONI TRADE-IN (Corretto l'import da ModalTradeInData)
 import { resetTradeInValuation } from "@/redux/features/tradeIn/showTradeInSlice";
-import { clearTradeInItemDetails } from "@/redux/features/modalTradeInData/ModalTradeInData"; // ✅ Corretto l'import
-
-// IMPORTAZIONI DELLE ICONE (Assumo siano necessarie)
-import { ShieldCheck, Truck, RefreshCw, Plus, Minus } from "lucide-react";
-
-// IMPORTAZIONI DEI COMPONENTI (Assumo siano necessarie)
+import { clearTradeInItemDetails } from "@/redux/features/modalTradeInData/ModalTradeInData";
 import ReviewCarousel from "@/components/share/review-carousel/ReviewCarousel";
 import TrustSection from "@/components/buy/TrustSection";
 import Accordion from "@/components/accordion/Accordion";
-
-// Assumiamo che la struttura del prodotto sia la seguente
 interface IProduct {
   _id: string;
   admin: string;
@@ -64,7 +55,6 @@ export default function CartPage() {
   const tradeInIsActive = useSelector(
     (state: RootState) => state.showTradeInData.isTradeInActive
   );
-  // ✅ Selezionato il dato dal corretto slice e nome di stato
   const tradeInDetailsFromRedux = useSelector(
     (state: RootState) => state.modalTradeInDataSlice.modalTradeInData
   );
@@ -122,7 +112,7 @@ export default function CartPage() {
   );
 
   const shipping = 0;
-  const total = subtotal + shipping; // Totale del carrello prima della permuta
+  const total = subtotal + shipping;
 
   // 🚀 LOGICA DI RECUPERO DETTAGLI TRADE-IN
   const getTradeInDetails = () => {
@@ -141,7 +131,7 @@ export default function CartPage() {
 
       technicalIssues: details.details.technicalDefects || "No",
       originalAccessories: details.details.accessories || "Sì",
-      box: (details.details as any).box || "N/D", // Aggiunto Box
+      box: (details.details as any).box || "N/D",
 
       tradeInValue: tradeInFinalValue,
       imagePath: details.imagePath || "/placeholder.png",
@@ -157,7 +147,7 @@ export default function CartPage() {
   // 🚀 FUNZIONE removeTradeIn (Usa le azioni Redux)
   const removeTradeIn = () => {
     dispatch(resetTradeInValuation());
-    dispatch(clearTradeInItemDetails()); // ✅ Usata l'azione corretta
+    dispatch(clearTradeInItemDetails());
 
     const cart = JSON.parse(localStorage?.getItem("cart") || "[]");
     const updatedCart = cart.filter((item: any) => !item.isTradeIn);
@@ -391,14 +381,14 @@ export default function CartPage() {
                     Condizione: {tradeInDetails.condition}
                   </p>
                   <p className="text-sm font-normal text-gray-700">
-                    **Difetti tecnici:** {tradeInDetails.technicalIssues}
+                    Difetti tecnici: {tradeInDetails.technicalIssues}
                   </p>
                   <p className="text-sm font-normal text-gray-700">
-                    **Accessori originali:**{" "}
+                    Accessori originali:
                     {tradeInDetails.originalAccessories}
                   </p>
                   <p className="text-sm font-normal text-gray-700">
-                    **Scatola originale:** {tradeInDetails.box}
+                    Scatola originale: {tradeInDetails.box}
                   </p>
                 </div>
                 <div className="flex items-end justify-end mt-auto">
@@ -441,13 +431,13 @@ export default function CartPage() {
 
             <div className="text-base text-gray-700 space-y-3 pt-3">
               <p>
-                Dopo aver inserito nel carrello il trade-in ti manderemo, nel
-                giro di 1-3 giorni lavorativi, tutto l'occorrente per spedirci
-                il tuo dispositivo gratuitamente!
+                Hai 7 giorni per goderti la nuova console. Poi, ci pensiamo noi:
+                riceverai un'etichetta di spedizione gratuita e una guida video
+                passo-passo per spedirci l'usato.
               </p>
               <p>
-                Quando riceveremo il tuo dispositivo ci riserveremo 2-3 giorni
-                lavorativi per testarlo, dopodiché ti invieremo l'importo
+                Quando riceveremo la tua console ci riserveremo 2‑3 giorni
+                lavorativi per testarlo, dopodiché ti invieremo l’importo
                 stimato.
               </p>
             </div>

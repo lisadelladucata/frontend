@@ -1,14 +1,12 @@
-// ConsoleModal.tsx (CORRETTO)
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store/store";
-import { toggleModal } from "@/redux/features/modal/modalSlice"; // ✅ Solo azioni modal
+import { toggleModal } from "@/redux/features/modal/modalSlice";
 import {
   useGetSingleProductQuery,
   useGetAllProductsQuery,
-  useGetEstimateProductPriceMutation,
 } from "@/redux/features/products/ProductAPI";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -17,7 +15,7 @@ import {
   addModalTradeInData,
   TradeInItem,
   TradeInDetails,
-} from "@/redux/features/modalTradeInData/ModalTradeInData"; // ✅ Import corretto dei tipi e azioni Trade-In
+} from "@/redux/features/modalTradeInData/ModalTradeInData";
 import { completeTradeInValuation } from "@/redux/features/tradeIn/showTradeInSlice";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -32,6 +30,7 @@ interface Question {
     value: string;
     label: string;
     description?: string;
+    deduction?: number;
   }[];
 }
 
@@ -48,9 +47,9 @@ const MOCK_QUESTIONS: Question[] = [
     text: "In che condizioni è la tua console?",
     step: 1,
     options: [
-      { value: "brand_new", label: "Brand New" },
-      { value: "good", label: "Good" },
-      { value: "not_bad", label: "Not Bad" },
+      { value: "brand_new", label: "New", deduction: 0 },
+      { value: "good", label: "Good", deduction: -10 },
+      { value: "not_bad", label: "Not Bad", deduction: -50 },
     ],
   },
   {
@@ -58,8 +57,8 @@ const MOCK_QUESTIONS: Question[] = [
     text: "La console è priva di difetti tecnici?",
     step: 1,
     options: [
-      { value: "si_perfetta", label: "Sì" },
-      { value: "no_difetti", label: "No" },
+      { value: "si_perfetta", label: "Sì", deduction: 0 },
+      { value: "no_difetti", label: "No", deduction: -80 },
     ],
   },
   {
@@ -67,8 +66,8 @@ const MOCK_QUESTIONS: Question[] = [
     text: "Sono compresi gli accessori originali?",
     step: 2,
     options: [
-      { value: "si_completi", label: "Sì" },
-      { value: "no_mancano", label: "No" },
+      { value: "si_completi", label: "Sì", deduction: 0 },
+      { value: "no_mancano", label: "No", deduction: -30 },
     ],
   },
   {
@@ -76,9 +75,9 @@ const MOCK_QUESTIONS: Question[] = [
     text: "Quanti controller ci invierai?",
     step: 3,
     options: [
-      { value: "zero", label: "0" },
-      { value: "uno", label: "1" },
-      { value: "due", label: "2" },
+      { value: "zero", label: "0", deduction: -50 },
+      { value: "uno", label: "1", deduction: 0 },
+      { value: "due", label: "2", deduction: 30 },
     ],
   },
   {
@@ -86,8 +85,8 @@ const MOCK_QUESTIONS: Question[] = [
     text: "Memoria di archiviazione del dispositivo?",
     step: 4,
     options: [
-      { value: "1tb", label: "1 Terabyte" },
-      { value: "500gb", label: "500 Gigabyte" },
+      { value: "1tb", label: "1 Terabyte", deduction: 0 },
+      { value: "500gb", label: "500 Gigabyte", deduction: -20 },
     ],
   },
   {
@@ -95,8 +94,8 @@ const MOCK_QUESTIONS: Question[] = [
     text: "Possiedi la scatola e l'imballo originale?",
     step: 5,
     options: [
-      { value: "si_scatola", label: "Sì" },
-      { value: "no_scatola", label: "No" },
+      { value: "si_scatola", label: "Sì", deduction: 0 },
+      { value: "no_scatola", label: "No", deduction: -20 },
     ],
   },
 ];
@@ -121,11 +120,10 @@ const CustomModal: React.FC<CustomModalProps> = ({
       onClick={handleBackdropClick}>
       <div
         className="w-full max-w-xl bg-[#eae9ef] rounded-t-2xl shadow-xl transition-all duration-300 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-        style={{ height: "85vh" }}>
+        onClick={(e) => e.stopPropagation()}>
         <div className="w-10 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-2" />
 
-        <div className="flex flex-col h-[calc(90vh-20px)]">{children}</div>
+        <div className="flex flex-col h-[calc(100%-16px)]">{children}</div>
       </div>
     </div>
   );
@@ -137,7 +135,6 @@ const ConsoleModal: React.FC = () => {
   const dispatch = useDispatch();
 
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [showDetails, setShowDetails] = useState(false);
   const [selectedConsoleImage, setSelectedConsoleImage] = useState<
     string | null
   >(null);
@@ -160,13 +157,54 @@ const ConsoleModal: React.FC = () => {
   );
   const { data: consoleLists } = useGetAllProductsQuery({ limit: 10 });
 
+  const BASE_PRICE_DEFAULT = 400;
+  const MIN_TRADE_IN_PRICE = 50;
+
+  const calculateTradeInPrice = useCallback(
+    (basePrice: number, currentAnswers: Record<string, string>): number => {
+      let finalPrice = basePrice;
+
+      // Usiamo le domande definite (sia mock che da API se productData le fornisce)
+      const allQuestions: Question[] = MOCK_QUESTIONS; // Usiamo MOCK_QUESTIONS come fallback se l'API non ha 'questions'
+
+      // Iteriamo su tutte le risposte
+      for (const questionId in currentAnswers) {
+        const selectedValue = currentAnswers[questionId];
+
+        // Trova la domanda corrispondente
+        const question = allQuestions.find((q) => q.id === questionId);
+
+        if (question) {
+          // Trova l'opzione selezionata
+          const selectedOption = question.options.find(
+            (opt) => opt.value === selectedValue
+          );
+
+          // Se l'opzione esiste e ha una deduzione, applicala.
+          if (selectedOption && typeof selectedOption.deduction === "number") {
+            finalPrice += selectedOption.deduction;
+          }
+        }
+      }
+
+      return Math.max(MIN_TRADE_IN_PRICE, finalPrice);
+    },
+    []
+  );
+
   useEffect(() => {
     if (currentStep === FINAL_STEP_INDEX) {
-      // Calcolo una volta
-      const val = Math.floor(Math.random() * (400 - 100 + 1) + 100);
-      setEstimatePrice(val); // Se avessi una API, la chiameresti qui
+      // 1. Definisci il prezzo base
+      const productBasePrice =
+        productData?.data?.product?.price ?? BASE_PRICE_DEFAULT;
+
+      // 2. Calcola il prezzo finale in base alle risposte
+      const calculatedVal = calculateTradeInPrice(productBasePrice, answers);
+
+      // 3. Imposta il prezzo
+      setEstimatePrice(calculatedVal);
     }
-  }, [currentStep]);
+  }, [currentStep, answers, productData, calculateTradeInPrice]);
 
   const handleCancel = () => {
     dispatch(toggleModal());
@@ -230,21 +268,7 @@ const ConsoleModal: React.FC = () => {
   const renderContent = (): React.JSX.Element | null => {
     if (isLoading) return <Loading />;
 
-    const cardBgColors: Record<string, string> = {
-      playstation: "bg-blue-600",
-      xbox: "bg-green-600",
-      nintendo: "bg-red-600",
-    };
-
-    const buttonBgColors: Record<string, string> = {
-      playstation: "bg-blue-600 hover:bg-blue-700",
-      xbox: "bg-green-600 hover:bg-green-700",
-      nintendo: "bg-red-600 hover:bg-red-700",
-    };
-
     const targetProductType = selectedPlatform.toLowerCase();
-    const selectionColorClass =
-      cardBgColors[targetProductType] || "bg-blue-600"; // --- STEP 0: scelta console ---
 
     const getSelectionColor = (platform: string): string => {
       switch (platform.toLowerCase()) {
@@ -267,7 +291,6 @@ const ConsoleModal: React.FC = () => {
 
       return (
         <div className="flex flex-col h-full bg-[#eae9ef]">
-          {" "}
           {/* Sfondo modale */}
           {/* -------------------- CONTENUTO PRINCIPALE (Scorrevole) -------------------- */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -461,9 +484,8 @@ const ConsoleModal: React.FC = () => {
         "q3_accessori_originali",
         answers["q3_accessori_originali"] || ""
       );
-      // ...
 
-      // Unisci i dettagli principali per la riga Sottotitolo (es. "Slim | 1TB | 2 Controller | Brand New Condition")
+      // Unisci i dettagli principali per la riga Sottotitolo (es. "Slim | 1TB | 2 Controller | New Condition")
       const mainDetailsLine = [
         selectedProduct?.model || "",
         memoryAnswer,
@@ -552,12 +574,12 @@ const ConsoleModal: React.FC = () => {
 
             {/* Testo informativo (Come nell'immagine) */}
             <p className="text-sm text-gray-600 px-2">
-              Dopo aver inserito nel carrello il trade-in ti manderemo, nel giro
-              di 1‑3 giorni lavorativi, tutto l’occorrente per spedirci il tuo
-              dispositivo gratuitamente!
+              Hai 7 giorni per goderti la nuova console. Poi, ci pensiamo noi:
+              riceverai un'etichetta di spedizione gratuita e una guida video
+              passo-passo per spedirci l'usato.
               <br />
               <br />
-              Quando riceveremo il tuo dispositivo ci riserveremo 2‑3 giorni
+              Quando riceveremo la tua console ci riserveremo 2‑3 giorni
               lavorativi per testarlo, dopodiché ti invieremo l’importo stimato.
             </p>
           </div>

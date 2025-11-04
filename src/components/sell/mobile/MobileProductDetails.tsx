@@ -35,7 +35,7 @@ const conditions = [
   },
   {
     id: 3,
-    title: "BRAND NEW",
+    title: "NEW",
   },
 ];
 
@@ -171,8 +171,8 @@ const MobileProductDetails = () => {
       <div className="p-5">
         <div className="border-2 border-[#64B95E]  p-3 rounded-lg">
           <p className="border-b-2 border-dashed inline-block">
-            <span className="text-[#64B95E] inline-block">BRAND NEW:</span> The
-            device is in perfect condition and has no signs
+            <span className="text-[#64B95E] inline-block">NEW:</span> The device
+            is in perfect condition and has no signs
           </p>
           <p className="border-b-2 border-dashed">
             of wear or scratches. Its functionality is equivalent to a factory-
@@ -289,8 +289,8 @@ const MobileProductDetails = () => {
         <div className="p-5">
           <div className="border-2 border-[#64B95E] p-3 rounded-lg">
             <p className="border-b-2 border-dashed">
-              <span className="text-[#64B95E]">BRAND NEW:</span> The device is
-              in perfect condition and has no signs
+              <span className="text-[#64B95E]">NEW:</span> The device is in
+              perfect condition and has no signs
             </p>
             <p className="border-b-2 border-dashed">
               of wear or scratches. Its functionality is equivalent to a

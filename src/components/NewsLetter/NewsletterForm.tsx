@@ -15,6 +15,14 @@ const NewsletterForm = () => {
 
     if (isSubscribing) return;
 
+    console.log("🔍 Debug Info:");
+    console.log("Base URL:", process.env.NEXT_PUBLIC_API_URL2);
+    console.log("Endpoint:", "/newsletter/subscribe");
+    console.log(
+      "Full URL dovrebbe essere:",
+      process.env.NEXT_PUBLIC_API_URL2 + "/newsletter/subscribe"
+    );
+
     setStatus("Iscrizione in corso...");
 
     try {

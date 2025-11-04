@@ -248,7 +248,7 @@ const ProductDetailsPage: React.FC = () => {
         "La console è in ottime condizioni, con minimi segni di utilizzo.",
     },
     {
-      label: "BRAND NEW",
+      label: "NEW",
       value: "new",
       price: 70,
       description: "Come nuova, con scatola originale e accessori intatti.",

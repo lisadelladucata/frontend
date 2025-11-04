@@ -22,24 +22,30 @@ interface ProductAccordionProps {
 // ------------------------------------------------------------------
 const FAQ_ITEMS = [
   {
-    question: "Le console sono nuove o ricondizionate?",
+    question: "Cosa significa ricondizionata?",
     answer:
-      "Tutte le console che vendiamo sono ricondizionate (refurbished) e certificate dal nostro team di tecnici specializzati. Garantiamo standard di qualità elevatissimi.",
+      "Una console ricondizionata è una console che è stata precedentemente usata, ma che è stata riportata a una condizione pari al nuovo. Il nostro processo di ricondizionamento include test approfonditi, pulizia completa e, se necessario, la sostituzione dei componenti difettosi (come la ventola o la pasta termica) per garantire che funzioni in modo impeccabile, proprio come una console nuova.",
   },
   {
-    question: "Le console ricondizionate hanno garanzia?",
+    question:
+      "Qual è la differenza tra una console usata e una ricondizionata?",
     answer:
-      "Sì. Ogni console ricondizionata è coperta da garanzia come da normativa vigente. Offriamo 12 mesi di garanzia diretta su tutti i componenti hardware.",
+      "Una console usata viene venduta così com'è, senza alcun controllo o garanzia sulla sua funzionalità. Al contrario, una console ricondizionata passa attraverso un rigoroso processo di rigenerazione e viene testata in ogni sua parte. La nostra priorità è garantirti un prodotto perfettamente funzionante e affidabile, con il vantaggio di un prezzo più conveniente.",
   },
   {
-    question: "Quanto dura la garanzia e cosa copre?",
+    question: "Come fate a garantire la qualità delle console?",
     answer:
-      "La garanzia standard dura 12 mesi e copre qualsiasi difetto hardware non dovuto a uso improprio o danni accidentali. Per i dettagli completi, consultare i Termini e Condizioni.",
+      "Ogni console che arriva nel nostro laboratorio viene sottoposta a una serie di oltre 30 test di controllo. Controlliamo ogni aspetto, dal corretto funzionamento di porte, lettore di dischi e connettività, fino alla stabilità delle prestazioni durante lunghe sessioni di gioco. Solo dopo aver superato tutti i test, la console viene approvata per la vendita.",
   },
   {
-    question: "Le console includono tutti i cavi per il funzionamento?",
+    question: "Posso restituire la console se non sono soddisfatto?",
     answer:
-      "Sì, ogni console include un controller, il cavo di alimentazione e il cavo HDMI necessari per iniziare subito a giocare.",
+      "Assolutamente sì. Oltre alla garanzia, hai il diritto di recesso entro 14 giorni dalla ricezione del prodotto, senza dover fornire alcuna motivazione. Se la console non soddisfa le tue aspettative, puoi restituirla e riceverai il rimborso completo. Vogliamo che tu sia pienamente soddisfatto del tuo acquisto.",
+  },
+  {
+    question: " I cavi sono inclusi?",
+    answer:
+      "Ogni console viene venduta completa di tutti gli accessori essenziali per iniziare a giocare subito, come i cavi di alimentazione e video e un controller. I controller e i cavi possono essere originali, sempre testati per garantire la stessa esperienza di gioco. Specifichiamo chiaramente nella descrizione del prodotto se un accessorio non è originale.",
   },
 ];
 
