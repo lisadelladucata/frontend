@@ -26,7 +26,7 @@ const SellPage = () => {
           setProduct_type={setProduct_type}
           product_type={product_type}
         />
-        <ReviewCarousel productName="" />
+        <ReviewCarousel productName="" theme="gray" />
       </div>
 
       {/* show only for mobile ddevice */}
@@ -35,7 +35,7 @@ const SellPage = () => {
         <FindOutConsole />
 
         <ConsoleSelectorMobile />
-        <ReviewCarousel productName="" />
+        <ReviewCarousel productName="" theme="gray" />
         <BlogCarousel />
       </div>
     </>

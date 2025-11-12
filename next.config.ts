@@ -25,10 +25,6 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/v1/newsletter/subscribe",
-        destination: "https://api.consolelocker.it/api/v1/newsletter/subscribe",
-      },
-      {
         source: "/api/v1/:path*",
         destination: "https://api.consolelocker.it/api/v1/:path*",
       },

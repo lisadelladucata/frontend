@@ -48,7 +48,7 @@ const TrustSection: React.FC<TrustSectionProps> = ({
         <div className="flex items-center space-x-3">
           <ShieldCheck className="h-6 w-6 text-gray-600 flex-shrink-0" />
           <p className="text-lg text-[#101010] font-medium">
-            Riconfezionato -
+            Ricondizionato -
             <span className="font-bold">12 Mesi di garanzia.</span>
           </p>
         </div>
