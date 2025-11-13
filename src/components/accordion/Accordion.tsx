@@ -66,66 +66,55 @@ const FaqAccordion: React.FC<{ productType: string }> = ({ productType }) => {
     "Le console ricondizionate hanno garanzia?"
   );
 
-  const isDark = isDarkMode(productType);
-
+  // ✨ MODIFICA LOGICA DEI COLORI PER FORZARE SFONDO GRIGIO E BLOCCHI BIANCHI
   const { baseBg, activeHeaderBg, separatorClass } = useMemo(() => {
-    let base = "bg-gray-700";
-    let active = "bg-gray-800";
-    let separator = "border-[#FDFDFD]";
+    // Il contenitore principale delle FAQ (lo sfondo dietro i blocchi delle domande)
+    const base = "bg-gray-200"; // ⬅️ Sfondo del contenitore principale GRIGIO CHIARO
 
-    if (productType === "xbox") {
-      base = "bg-[#72c470] ";
-      active = "bg-[#3BAE3B]";
-    } else if (productType === "playstation") {
-      base = "bg-[#012b81]";
-      active = "bg-[#003caa]";
-    } else if (productType === "nintendo") {
-      base = "bg-[#a41622]";
-      active = "bg-[#db2220]";
-    } else {
-      base = "bg-gray-100";
-      active = "bg-gray-300";
-      separator = "border-gray-400 ";
-    }
+    // L'header della domanda (blocco della domanda)
+    const active = "bg-white"; // ⬅️ Header e contenuto BIANCHI
+
+    // Il colore del separatore/bordo
+    const separator = "border-gray-300";
 
     return { baseBg: base, activeHeaderBg: active, separatorClass: separator };
-  }, [productType]);
+  }, []); // Dipendenze vuote per calcolare una sola volta
 
-  const textColorClass = getTextColorClass(isDark);
+  // Il testo sarà sempre nero in questo contesto di colori chiari
+  const textColorClass = "text-black";
+  const iconColorClass = "text-gray-600"; // Icone grigie per contrasto soft
 
   return (
-    <div className={`space-y-4 max-w-xl ${baseBg} z-100`}>
+    <div className={`space-y-4 max-w-xl ${baseBg} z-100 p-1 rounded-lg`}>
+      {/* Aggiunto p-1 per mostrare il baseBg */}
       {FAQ_ITEMS.map((item) => {
         const isOpen = openFaq === item.question;
         let roundedClasses = isOpen ? "rounded-t-lg" : "rounded-lg";
 
         return (
-          <div key={item.question} className="pb-0 overflow-hidden shadow-lg">
-            {/* Domanda (Header) */}
+          <div
+            key={item.question}
+            className="pb-0 overflow-hidden shadow-md border border-gray-200 rounded-lg">
+            {/* Domanda (Header) - ORA BIANCO */}
             <div
               className={`p-4 flex items-start justify-between cursor-pointer transition-colors duration-200 
-                          ${activeHeaderBg} ${roundedClasses}`}
+                          ${activeHeaderBg} ${roundedClasses}`} // Header BIANCO
               onClick={() => setOpenFaq(isOpen ? "" : item.question)}>
               <h4 className={`font-medium text-base pr-4 ${textColorClass}`}>
                 {item.question}
               </h4>
               {isOpen ? (
-                <Minus
-                  className={`h-6 w-6 text-[#FDFDFD] flex-shrink-0 ${textColorClass}`}
-                />
+                <Minus className={`h-6 w-6 flex-shrink-0 ${iconColorClass}`} />
               ) : (
-                <Plus
-                  className={`h-6 w-6 text-[#FDFDFD] flex-shrink-0 ${textColorClass}`}
-                />
+                <Plus className={`h-6 w-6 flex-shrink-0 ${iconColorClass}`} />
               )}
             </div>
-            {/* Risposta (Contenuto) - usa il colore base del contenitore */}
+
+            {/* Risposta (Contenuto) - ORA BIANCO */}
             {isOpen && (
               <div
                 className={`${activeHeaderBg} p-4 pt-2 border-t ${separatorClass} rounded-b-lg `}>
-                <p className={`text-[#FDFDFD] text-sm ${textColorClass}`}>
-                  {item.answer}
-                </p>
+                <p className={`text-sm ${textColorClass}`}>{item.answer}</p>
               </div>
             )}
           </div>
@@ -134,7 +123,6 @@ const FaqAccordion: React.FC<{ productType: string }> = ({ productType }) => {
     </div>
   );
 };
-
 // ------------------------------------------------------------------
 // Componente interno per il singolo elemento dell'Accordion (Descrizione/Garanzia)
 // ------------------------------------------------------------------
@@ -156,15 +144,21 @@ const AccordionItem: React.FC<{
   }, [productType]);
 
   const darkBgClass = useMemo(() => {
+    if (title === "FAQ") {
+      return "bg-gray-200";
+    }
     if (productType === "xbox") return "bg-[#72c470]";
     if (productType === "playstation") return "bg-[#012b81]";
     if (productType === "nintendo") return "bg-[#a41622]";
     return "bg-white";
-  }, [productType]);
+  }, [productType, title]);
 
   const separatorClass = useMemo(() => {
+    if (title === "FAQ") {
+      return "border-gray-200";
+    }
     return isDark ? "border-[#FDFDFD]" : "border-gray-400";
-  }, [isDark]);
+  }, [isDark, title]);
 
   const textColorClass = getTextColorClass(isDark);
 
