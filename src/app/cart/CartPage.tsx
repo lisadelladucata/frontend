@@ -461,18 +461,15 @@ export default function CartPage() {
         {/* ACCORDION (Descrizione, Garanzia, FAQ) */}
         <div className="px-5 pb-8 mt-6">
           <Accordion
-            productName={products.product?.name || ""}
-            productType={""}
-            productSpecs={products.product?.technical_specs}
-            productDescription={
-              products.product?.long_description ||
-              products.product?.description ||
-              ""
-            }
-            modelDes={products.product?.modelDes}
-            controllerDes={products.product?.controllerDes}
-            memoryDes={products.product?.memoryDes}
-            conditionDes={products.product?.conditionDes}
+            productName={products.name}
+            productType={products.type}
+            productDescription={products.description}
+            productSpecs={undefined}
+            modelDes={undefined}
+            controllerDes={undefined}
+            memoryDes={undefined}
+            conditionDes={undefined}
+            visibleSections={["Garanzia Console Locker", "FAQ"]}
           />
         </div>
         <div className="mt-6">

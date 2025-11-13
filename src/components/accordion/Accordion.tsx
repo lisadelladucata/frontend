@@ -1,20 +1,24 @@
-// src/components/products/ProductAccordion.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
 import { ChevronUp, ChevronDown, Plus, Minus } from "lucide-react";
 
-// Definisci le prop del componente
+type AccordionSectionKey =
+  | "Descrizione Prodotto"
+  | "Garanzia Console Locker"
+  | "FAQ";
+
 interface ProductAccordionProps {
   productName: string;
-  productType: string; // Es. "playstation", "xbox", "nintendo"
+  productType: string;
   productSpecs: { label: string; value: string }[] | undefined;
   productDescription: string;
-  // Campi descrittivi aggiunti
   modelDes: string | undefined;
   controllerDes: string | undefined;
   memoryDes: string | undefined;
   conditionDes: string | undefined;
+
+  visibleSections?: AccordionSectionKey[];
 }
 
 // ------------------------------------------------------------------
@@ -49,7 +53,6 @@ const FAQ_ITEMS = [
   },
 ];
 
-// Helper per determinare il colore del testo (Bianco per Dark, Nero per Light)
 const isDarkMode = (productType: string) =>
   ["xbox", "playstation", "nintendo"].includes(productType);
 const getTextColorClass = (isDark: boolean) =>
@@ -65,7 +68,6 @@ const FaqAccordion: React.FC<{ productType: string }> = ({ productType }) => {
 
   const isDark = isDarkMode(productType);
 
-  // LOGICA DEI COLORI
   const { baseBg, activeHeaderBg, separatorClass } = useMemo(() => {
     let base = "bg-gray-700";
     let active = "bg-gray-800";
@@ -146,20 +148,18 @@ const AccordionItem: React.FC<{
   const isOpen = openAccordion === title;
   const isDark = isDarkMode(productType);
 
-  // activeBgClass = colore di base della sezione (per l'Header)
   const activeBgClass = useMemo(() => {
     if (productType === "xbox") return "bg-[#46aa48]";
     if (productType === "playstation") return "bg-[#003caa]";
     if (productType === "nintendo") return "bg-[#db2220]";
-    return "bg-transparent"; // FALLBACK: Header light
+    return "bg-transparent";
   }, [productType]);
 
-  // darkBgClass = colore più scuro (per il Contenuto)
   const darkBgClass = useMemo(() => {
     if (productType === "xbox") return "bg-[#72c470]";
     if (productType === "playstation") return "bg-[#012b81]";
     if (productType === "nintendo") return "bg-[#a41622]";
-    return "bg-white"; // FALLBACK: Contenuto light
+    return "bg-white";
   }, [productType]);
 
   const separatorClass = useMemo(() => {
@@ -174,7 +174,7 @@ const AccordionItem: React.FC<{
       {/* Header - usa il colore principale */}
       <div
         className={`p-4 flex items-center justify-between cursor-pointer transition-colors duration-200 
-                        ${activeBgClass} border-b-2 ${separatorClass}`}
+                         ${activeBgClass} border-b-2 ${separatorClass}`}
         onClick={() => setOpenAccordion(isOpen ? "" : title)}>
         <h3 className={`font-semibold text-lg ${textColorClass}`}>{title}</h3>
         {isOpen ? (
@@ -207,13 +207,13 @@ const Accordion: React.FC<ProductAccordionProps> = ({
   controllerDes,
   memoryDes,
   conditionDes,
+  visibleSections,
 }) => {
   const [openAccordion, setOpenAccordion] = useState<string>(
     "Descrizione Prodotto"
   );
 
   const dynamicDescriptionContent = (
-    // Il colore del testo viene gestito dal parent AccordionItem
     <div className="space-y-4">
       <p className="font-bold">{productName}</p>
       <p>
@@ -266,10 +266,13 @@ const Accordion: React.FC<ProductAccordionProps> = ({
     </div>
   );
 
-  const ACCORDION_ITEMS = [
-    { title: "Descrizione Prodotto", content: dynamicDescriptionContent },
+  const ALL_ACCORDION_ITEMS = [
     {
-      title: "Garanzia Console Locker",
+      title: "Descrizione Prodotto" as AccordionSectionKey,
+      content: dynamicDescriptionContent,
+    },
+    {
+      title: "Garanzia Console Locker" as AccordionSectionKey,
       content: (
         <p>
           Le nostre console ricondizionate sono coperte da una garanzia completa
@@ -279,22 +282,41 @@ const Accordion: React.FC<ProductAccordionProps> = ({
       ),
     },
     {
-      title: "FAQ",
+      title: "FAQ" as AccordionSectionKey,
       content: <FaqAccordion productType={productType} />,
     },
   ];
 
-  // LOGICA DEI COLORI per il DIV CONTENITORE esterno (colore di base)
+  const ACCORDION_ITEMS = useMemo(() => {
+    if (visibleSections && visibleSections.length > 0) {
+      return ALL_ACCORDION_ITEMS.filter((item) =>
+        visibleSections.includes(item.title)
+      );
+    }
+    return ALL_ACCORDION_ITEMS;
+  }, [visibleSections, ALL_ACCORDION_ITEMS]);
+
   const containerBgClass = useMemo(() => {
     if (productType === "xbox") return "bg-[#46aa48]";
     if (productType === "playstation") return "bg-[#003caa]";
     if (productType === "nintendo") return "bg-[#db2220]";
-    return "bg-transparent"; // FALLBACK: Sfondo light
+    return "bg-transparent";
   }, [productType]);
+
+  React.useEffect(() => {
+    if (
+      ACCORDION_ITEMS.length > 0 &&
+      !ACCORDION_ITEMS.find((item) => item.title === openAccordion)
+    ) {
+      setOpenAccordion(ACCORDION_ITEMS[0].title);
+    }
+    if (ACCORDION_ITEMS.length === 0) {
+      setOpenAccordion("");
+    }
+  }, [ACCORDION_ITEMS, openAccordion]);
 
   return (
     <div className={`py-8 lg:py-16 ${containerBgClass}`}>
-      {/* Centra il contenuto se necessario (usa il tuo componente Container qui) */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {ACCORDION_ITEMS.map((item) => (
           <AccordionItem
